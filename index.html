@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>크라켄 분석기</title>
-  <!-- Chart.js 로드 -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -23,7 +22,10 @@
 
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
     h1 { font-size: 1.5rem; color: var(--cyan); }
-    #saveStatus { font-size: 0.9rem; color: var(--gold); }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    #saveStatus { font-size: 0.9rem; color: var(--gold); font-weight: bold; }
+    .btn-manual-save { background: var(--cyan); color: #000; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .btn-manual-save:hover { opacity: 0.9; }
 
     .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
     .prob-card { background: var(--card-bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border); }
@@ -73,19 +75,16 @@
 
   <header>
     <h1>크라켄 분석기</h1>
-    <div id="saveStatus">연동 준비 중…</div>
+    <div class="header-right">
+      <div id="saveStatus">서버 연동 중…</div>
+      <button type="button" class="btn-manual-save" id="manualSaveBtn">💾 기록 저장하기</button>
+    </div>
   </header>
 
-  <!-- 확률 정보 Grid -->
   <div class="grid-container" id="probGrid"></div>
-
-  <!-- 단계별 기댓값 요약 바 -->
   <div class="sucker-meter" id="suckerMeter"></div>
-
-  <!-- 입력 탭 -->
   <div class="tabs" id="stageTabs"></div>
 
-  <!-- 일자별 입력 테이블 -->
   <div class="table-container">
     <table>
       <thead>
@@ -102,12 +101,10 @@
     </table>
   </div>
 
-  <!-- 컨트롤 버튼 -->
   <div class="ctrl-bar" style="margin-bottom: 24px;">
     <button class="btn-reset" id="resetBtn" type="button">현재 단계 기록 초기화</button>
   </div>
 
-  <!-- 종합 분석 테이블 -->
   <h2 style="font-size: 1.2rem; margin-bottom: 12px; color: var(--text-main);">30일 누적 분석 및 기댓값 비교</h2>
   <div class="table-container">
     <table>
@@ -128,15 +125,13 @@
     </table>
   </div>
 
-  <!-- 최종 누적 토탈 -->
   <div class="totals-grid" id="totalsGrid"></div>
 
-  <!-- 누적 그래프 -->
   <div class="chart-container">
     <canvas id="cumChart"></canvas>
   </div>
 
-  <!-- Firebase SDK 로드 -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
@@ -144,7 +139,6 @@
   (function(){
     "use strict";
 
-    // 사용자 Firebase 설정 적용
     const firebaseConfig = {
       apiKey: "AIzaSyAgkmoejYnv7qK6jtFfdzUHvuPceXBQxRE",
       authDomain: "kraken-log.firebaseapp.com",
@@ -155,12 +149,10 @@
       appId: "1:791595838017:web:d424620f0a183e429b74c0"
     };
 
-    // Firebase 초기화
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
     const dbRef = database.ref('kraken_data');
 
-    // ---------- 확률 및 상태 변수 ----------
     var STAGES = [7,8,9];
     var BOX_RATE = {7:0.6500, 8:0.6700, 9:0.6900};
     var DIST = {1:0.700963, 2:0.289037, 3:0.010000};
@@ -180,7 +172,27 @@
       for(var i=0;i<DAYS;i++) data[s].push([null,null,null]);
     });
 
-    // ---------- 렌더링 함수들 ----------
+    function setStatus(text){
+      var el = document.getElementById('saveStatus');
+      if(el) el.textContent = text;
+    }
+
+    // 서버로 데이터 즉시 저장
+    function saveDataToServer(isManual){
+      setStatus('저장 중…');
+      dbRef.set(data)
+        .then(function(){
+          var t = new Date();
+          var timeStr = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+          setStatus('저장완료 (' + timeStr + ')');
+          if(isManual){ alert('기록이 파이어베이스에 성공적으로 저장되었습니다!'); }
+        })
+        .catch(function(err){
+          setStatus('저장 실패!');
+          if(isManual){ alert('저장에 실패했습니다. 인터넷 연결이나 파이어베이스 규칙을 확인하세요.'); }
+        });
+    }
+
     function renderProbGrid(){
       var grid = document.getElementById('probGrid');
       if(!grid) return;
@@ -266,16 +278,17 @@
           var cur = data[activeStage][d][p];
           sel.value = (cur===null) ? '' : String(cur);
           if(cur!==null) sel.classList.add('has-value');
+
           (function(dayIdx, playIdx, selectEl){
             selectEl.addEventListener('change', function(){
               var v = selectEl.value;
               data[activeStage][dayIdx][playIdx] = (v==='') ? null : parseInt(v,10);
-              selectEl.classList.toggle('has-value', v!=='');
               renderInputGrid();
               renderAnalysis();
-              scheduleSave();
+              saveDataToServer(false); // 수치 변경 시 자동 저장
             });
           })(d, p, sel);
+
           td.appendChild(sel);
           tr.appendChild(td);
         }
@@ -395,42 +408,27 @@
       });
     }
 
-    // ---------- Firebase 데이터 저장 및 실시간 불러오기 ----------
-    var saveTimer = null;
-    function setStatus(text){
-      var el = document.getElementById('saveStatus');
-      if(el) el.textContent = text;
-    }
-
-    function scheduleSave(){
-      setStatus('서버 저장 중…');
-      clearTimeout(saveTimer);
-      saveTimer = setTimeout(function(){
-        dbRef.set(data)
-          .then(function(){
-            var t = new Date();
-            setStatus('연동됨 · ' + t.getHours() + ':' + String(t.getMinutes()).padStart(2,'0'));
-          })
-          .catch(function(err){
-            setStatus('저장 실패');
-          });
-      }, 450);
-    }
-
     function listenData(){
-      setStatus('서버 연동 중…');
       dbRef.on('value', function(snapshot){
         var val = snapshot.val();
         if(val){
           STAGES.forEach(function(s){
             if(val[s] && val[s].length === DAYS){ data[s] = val[s]; }
           });
-          setStatus('서버 불러오기 완료');
+          setStatus('연동 완료');
         } else {
           setStatus('신규 기록 시작');
         }
         renderInputGrid();
         renderAnalysis();
+      });
+    }
+
+    // 수동 저장 버튼 이벤트 연결
+    var manualSaveBtn = document.getElementById('manualSaveBtn');
+    if(manualSaveBtn){
+      manualSaveBtn.addEventListener('click', function(){
+        saveDataToServer(true);
       });
     }
 
@@ -442,11 +440,10 @@
         for(var i=0;i<DAYS;i++) data[activeStage][i] = [null,null,null];
         renderInputGrid();
         renderAnalysis();
-        scheduleSave();
+        saveDataToServer(false);
       });
     }
 
-    // 실행
     renderProbGrid();
     renderSuckerMeter();
     renderTabs();
