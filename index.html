@@ -131,9 +131,9 @@
     <canvas id="cumChart"></canvas>
   </div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <!-- Firebase SDK 호환 버전 -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <script>
   (function(){
@@ -149,9 +149,12 @@
       appId: "1:791595838017:web:d424620f0a183e429b74c0"
     };
 
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    
     const database = firebase.database();
-    const dbRef = database.ref('kraken_data');
+    const dbRef = database.ref('shared_kraken_data');
 
     var STAGES = [7,8,9];
     var BOX_RATE = {7:0.6500, 8:0.6700, 9:0.6900};
@@ -177,7 +180,6 @@
       if(el) el.textContent = text;
     }
 
-    // 서버로 데이터 즉시 저장
     function saveDataToServer(isManual){
       setStatus('저장 중…');
       dbRef.set(data)
@@ -185,11 +187,12 @@
           var t = new Date();
           var timeStr = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
           setStatus('저장완료 (' + timeStr + ')');
-          if(isManual){ alert('기록이 파이어베이스에 성공적으로 저장되었습니다!'); }
+          if(isManual){ alert('서버에 성공적으로 저장되었습니다!'); }
         })
         .catch(function(err){
-          setStatus('저장 실패!');
-          if(isManual){ alert('저장에 실패했습니다. 인터넷 연결이나 파이어베이스 규칙을 확인하세요.'); }
+          console.error(err);
+          setStatus('저장 실패 (오류 발생)');
+          if(isManual){ alert('저장에 실패했습니다. Firebase 규칙을 확인하세요.'); }
         });
     }
 
@@ -285,7 +288,7 @@
               data[activeStage][dayIdx][playIdx] = (v==='') ? null : parseInt(v,10);
               renderInputGrid();
               renderAnalysis();
-              saveDataToServer(false); // 수치 변경 시 자동 저장
+              saveDataToServer(false);
             });
           })(d, p, sel);
 
@@ -415,16 +418,18 @@
           STAGES.forEach(function(s){
             if(val[s] && val[s].length === DAYS){ data[s] = val[s]; }
           });
-          setStatus('연동 완료');
+          setStatus('서버 연동 완료');
         } else {
-          setStatus('신규 기록 시작');
+          setStatus('연동 완료 (데이터 없음)');
         }
         renderInputGrid();
         renderAnalysis();
+      }, function(err){
+        console.error(err);
+        setStatus('서버 연동 오류!');
       });
     }
 
-    // 수동 저장 버튼 이벤트 연결
     var manualSaveBtn = document.getElementById('manualSaveBtn');
     if(manualSaveBtn){
       manualSaveBtn.addEventListener('click', function(){
