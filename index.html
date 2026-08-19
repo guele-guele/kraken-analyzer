@@ -169,6 +169,7 @@
 
     var activeStage = 7;
     var data = {};
+    
     function initEmptyData() {
       STAGES.forEach(function(s){
         data[s] = [];
@@ -188,13 +189,12 @@
         .then(function(){
           var t = new Date();
           var timeStr = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
-          setStatus('공유 완료 (' + timeStr + ')');
-          if(isManual){ alert('모든 사용자 공유 서버에 기록을 저장했습니다!'); }
+          setStatus('저장완료 (' + timeStr + ')');
+          if(isManual){ alert('서버에 성공적으로 저장되었습니다!'); }
         })
         .catch(function(err){
           console.error(err);
-          setStatus('저장 실패 (권한 없음)');
-          if(isManual){ alert('저장에 실패했습니다. Firebase 규칙을 확인하세요.'); }
+          setStatus('저장 실패!');
         });
     }
 
@@ -254,8 +254,9 @@
 
     function dayActualSum(stage, dayIdx){
       var vals = data[stage][dayIdx];
+      if(!vals) return 0;
       var sum = 0;
-      for(var i=0;i<vals.length;i++){ if(vals[i]!==null) sum += vals[i]; }
+      for(var i=0;i<vals.length;i++){ if(vals[i]!==null && vals[i]!==undefined) sum += Number(vals[i]); }
       return sum;
     }
 
@@ -280,13 +281,17 @@
           sel.className = 'play-select';
           var opts = ['<option value="">-</option>','<option value="0">0 (박스X)</option>','<option value="1">1개</option>','<option value="2">2개</option>','<option value="3">3개</option>'];
           sel.innerHTML = opts.join('');
-          var cur = data[activeStage][d][p];
-          sel.value = (cur===null) ? '' : String(cur);
-          if(cur!==null) sel.classList.add('has-value');
+          
+          var cur = (data[activeStage] && data[activeStage][d]) ? data[activeStage][d][p] : null;
+          sel.value = (cur===null || cur===undefined) ? '' : String(cur);
+          if(cur!==null && cur!==undefined) sel.classList.add('has-value');
 
           (function(dayIdx, playIdx, selectEl){
             selectEl.addEventListener('change', function(){
               var v = selectEl.value;
+              if(!data[activeStage]) data[activeStage] = [];
+              if(!data[activeStage][dayIdx]) data[activeStage][dayIdx] = [null,null,null];
+              
               data[activeStage][dayIdx][playIdx] = (v==='') ? null : parseInt(v,10);
               renderInputGrid();
               renderAnalysis();
@@ -413,15 +418,35 @@
       });
     }
 
-    // 서버 변경사항 실시간 수신
+    // 서버 데이터를 자바스크립트 표준 배열 구조로 파싱하는 핵심 함수
+    function parseServerData(val) {
+      if(!val) return;
+      STAGES.forEach(function(s){
+        var stageObj = val[s];
+        if(stageObj){
+          var parsedStageArr = [];
+          for(var d=0; d<DAYS; d++){
+            var dayObj = stageObj[d];
+            if(dayObj){
+              var p0 = (dayObj[0] !== undefined && dayObj[0] !== null) ? Number(dayObj[0]) : null;
+              var p1 = (dayObj[1] !== undefined && dayObj[1] !== null) ? Number(dayObj[1]) : null;
+              var p2 = (dayObj[2] !== undefined && dayObj[2] !== null) ? Number(dayObj[2]) : null;
+              parsedStageArr.push([p0, p1, p2]);
+            } else {
+              parsedStageArr.push([null, null, null]);
+            }
+          }
+          data[s] = parsedStageArr;
+        }
+      });
+    }
+
     function listenData(){
       dbRef.on('value', function(snapshot){
         var val = snapshot.val();
         if(val){
-          STAGES.forEach(function(s){
-            if(val[s] && val[s].length === DAYS){ data[s] = val[s]; }
-          });
-          setStatus('실시간 공유 연동 중');
+          parseServerData(val);
+          setStatus('실시간 동기화 완료');
         } else {
           setStatus('연동 완료 (데이터 없음)');
         }
@@ -429,7 +454,7 @@
         renderAnalysis();
       }, function(err){
         console.error(err);
-        setStatus('서버 연동 오류');
+        setStatus('서버 연동 오류!');
       });
     }
 
@@ -443,7 +468,7 @@
     var resetBtn = document.getElementById('resetBtn');
     if(resetBtn){
       resetBtn.addEventListener('click', function(){
-        var ok = confirm('모든 사용자와 공유되는 ' + activeStage + '단계 기록을 초기화하시겠습니까?');
+        var ok = confirm('공유되는 ' + activeStage + '단계 기록을 초기화하시겠습니까?');
         if(!ok) return;
         for(var i=0;i<DAYS;i++) data[activeStage][i] = [null,null,null];
         renderInputGrid();
