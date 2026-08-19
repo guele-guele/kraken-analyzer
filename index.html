@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>크라켄 모듈 드랍 분석기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<!-- Chart.js CDN 경로를 안정적인 jsDelivr 공식 링크로 변경 -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+  :root{
+    --abyss-0:#070b10;
+    --abyss-1:#0d131b;
+    --abyss-2:#131b25;
+    --abyss-3:#1b2530;
+    --hull:#7d8a99;
+    --hull-dim:#4c5866;
+    --cyan:#37c7f0;
+    --cyan-dim:#1c5c72;
+    --gold:#f0b429;
+    --gold-dim:#7a5c19;
+    --magenta:#e0679a;
+    --danger:#e05353;
+    --good:#4fd68c;
+    --text-hi:#e8edf2;
+    --text-mid:#a9b6c2;
+    --text-lo:#647383;
+    --radius:6px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--abyss-0);}
+  body{
+    font-family:'Inter',sans-serif;
+    color:var(--text-hi);
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(55,199,240,0.08), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 10%, rgba(240,180,41,0.06), transparent 60%),
+      var(--abyss-0);
+    min-height:100vh;
+    padding:0 0 64px;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px;}
+ 
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    overflow:hidden;
+    border-bottom:1px solid var(--abyss-3);
+    padding:56px 20px 40px;
+    background:linear-gradient(180deg, #0a0f16 0%, var(--abyss-0) 100%);
+  }
+  .hero-inner{max-width:1080px;margin:0 auto;position:relative;z-index:2;}
+  .tentacle-svg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;opacity:0.55;pointer-events:none;}
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;letter-spacing:0.18em;text-transform:uppercase;
+    color:var(--cyan);
+    display:flex;align-items:center;gap:10px;margin-bottom:14px;
+  }
+  .eyebrow::before{content:"";width:22px;height:1px;background:var(--cyan);display:inline-block;}
+  h1.title{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    font-size:44px;
+    letter-spacing:0.01em;
+    margin:0 0 10px;
+    color:var(--text-hi);
+    text-shadow:0 0 24px rgba(55,199,240,0.25);
+  }
+  h1.title span{color:var(--gold);}
+  .subtitle{color:var(--text-mid);font-size:15px;max-width:640px;line-height:1.7;margin:0;}
+ 
+  /* sucker meter — signature element */
+  .sucker-meter{display:flex;gap:5px;align-items:center;margin-top:22px;flex-wrap:wrap;}
+  .sucker{
+    width:14px;height:14px;border-radius:50%;
+    background:var(--abyss-3);
+    border:1px solid var(--hull-dim);
+    position:relative;
+  }
+  .sucker.lit{
+    background:radial-gradient(circle at 35% 30%, #bdeeff, var(--cyan) 55%, var(--cyan-dim) 100%);
+    border-color:var(--cyan);
+    box-shadow:0 0 10px rgba(55,199,240,0.65);
+  }
+  .sucker-label{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-lo);margin-left:6px;}
+ 
+  /* ---------- SECTION SHELL ---------- */
+  section{padding:46px 0;}
+  .section-head{display:flex;align-items:baseline;gap:12px;margin-bottom:22px;border-bottom:1px solid var(--abyss-3);padding-bottom:14px;}
+  .section-num{font-family:'JetBrains Mono',monospace;color:var(--gold);font-size:13px;letter-spacing:0.08em;}
+  .section-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:24px;color:var(--text-hi);margin:0;}
+  .section-desc{color:var(--text-lo);font-size:13.5px;margin:6px 0 0;line-height:1.6;}
+ 
+  /* ---------- PROBABILITY CARDS ---------- */
+  .prob-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  @media (max-width:760px){.prob-grid{grid-template-columns:1fr;}}
+  .prob-card{
+    background:linear-gradient(180deg, var(--abyss-2), var(--abyss-1));
+    border:1px solid var(--abyss-3);
+    border-radius:var(--radius);
+    padding:20px;
+    position:relative;
+  }
+  .prob-card::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity:0.7;
+  }
+  .prob-card h3{
+    font-family:'Rajdhani',sans-serif;font-size:20px;margin:0 0 4px;color:var(--gold);
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .prob-card .stage-tag{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-lo);}
+  .prob-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px dashed var(--abyss-3);font-size:13.5px;}
+  .prob-row:first-of-type{border-top:none;margin-top:10px;}
+  .prob-row .k{color:var(--text-mid);}
+  .prob-row .v{font-family:'JetBrains Mono',monospace;color:var(--text-hi);}
+  .prob-row .v.cyan{color:var(--cyan);}
+  .prob-card .expect-line{
+    margin-top:14px;padding-top:14px;border-top:1px solid var(--abyss-3);
+    display:flex;justify-content:space-between;align-items:baseline;
+  }
+  .expect-line .lbl{font-size:12px;color:var(--text-lo);}
+  .expect-line .num{font-family:'JetBrains Mono',monospace;font-size:22px;color:var(--gold);}
+ 
+  /* ---------- TABS ---------- */
+  .tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+  .tab-btn{
+    font-family:'Rajdhani',sans-serif;font-weight:600;font-size:15px;
+    background:var(--abyss-1);border:1px solid var(--abyss-3);color:var(--text-mid);
+    padding:9px 20px;border-radius:4px;cursor:pointer;letter-spacing:0.02em;
+    transition:border-color .15s, color .15s, background .15s;
+  }
+  .tab-btn:hover{border-color:var(--hull-dim);color:var(--text-hi);}
+  .tab-btn.active{
+    background:linear-gradient(180deg, rgba(55,199,240,0.14), rgba(55,199,240,0.04));
+    border-color:var(--cyan);color:var(--cyan);
+  }
+  .tab-btn:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;}
+ 
+  /* ---------- INPUT GRID ---------- */
+  .grid-wrap{
+    border:1px solid var(--abyss-3);border-radius:var(--radius);overflow:hidden;
+    background:var(--abyss-1);
+  }
+  .grid-scroll{max-height:560px;overflow-y:auto;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  thead th{
+    position:sticky;top:0;z-index:3;
+    background:var(--abyss-2);color:var(--text-mid);
+    font-family:'JetBrains Mono',monospace;font-weight:600;font-size:11.5px;letter-spacing:0.04em;
+    text-transform:uppercase;padding:10px 8px;border-bottom:1px solid var(--abyss-3);text-align:center;
+  }
+  tbody td{padding:6px 8px;text-align:center;border-bottom:1px solid var(--abyss-2);color:var(--text-mid);}
+  tbody tr:hover td{background:rgba(55,199,240,0.04);}
+  td.day-cell{
+    font-family:'JetBrains Mono',monospace;color:var(--text-lo);font-weight:600;
+    background:var(--abyss-2);position:sticky;left:0;
+  }
+  select.play-select{
+    width:100%;max-width:110px;
+    background:var(--abyss-0);color:var(--text-hi);
+    border:1px solid var(--abyss-3);border-radius:4px;
+    padding:5px 4px;font-family:'JetBrains Mono',monospace;font-size:12.5px;
+    cursor:pointer;
+  }
+  select.play-select:focus-visible{outline:2px solid var(--cyan);outline-offset:1px;}
+  select.play-select.has-value{border-color:var(--cyan-dim);color:var(--cyan);}
+  td.sum-cell{font-family:'JetBrains Mono',monospace;color:var(--gold);font-weight:600;}
+  td.cum-cell{font-family:'JetBrains Mono',monospace;color:var(--text-lo);}
+ 
+  .grid-toolbar{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:12px 14px;background:var(--abyss-2);border-top:1px solid var(--abyss-3);
+    font-size:12px;color:var(--text-lo);
+  }
+  #saveStatus{font-family:'JetBrains Mono',monospace;}
+  .reset-btn{
+    background:none;border:1px solid var(--danger);color:var(--danger);
+    padding:6px 14px;border-radius:4px;font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;
+  }
+  .reset-btn:hover{background:rgba(224,83,83,0.1);}
+ 
+  /* ---------- ANALYSIS ---------- */
+  .analysis-wrap{border:1px solid var(--abyss-3);border-radius:var(--radius);overflow:hidden;background:var(--abyss-1);}
+  .analysis-scroll{overflow-x:auto;max-height:560px;overflow-y:auto;}
+  table.analysis{min-width:820px;}
+  table.analysis thead th.grp7{color:var(--cyan);}
+  table.analysis thead th.grp8{color:var(--gold);}
+  table.analysis thead th.grp9{color:var(--magenta);}
+  .diff-pos{color:var(--good);}
+  .diff-neg{color:var(--danger);}
+ 
+  .totals-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px;}
+  @media (max-width:820px){.totals-grid{grid-template-columns:repeat(2,1fr);}}
+  .total-card{
+    background:var(--abyss-2);border:1px solid var(--abyss-3);border-radius:var(--radius);
+    padding:16px;text-align:center;
+  }
+  .total-card .t-label{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-lo);letter-spacing:0.05em;}
+  .total-card .t-value{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:26px;margin-top:6px;}
+  .total-card.expected .t-value{color:var(--gold);}
+  .total-card.actual .t-value{color:var(--cyan);}
+  .total-card .t-sub{font-size:11px;color:var(--text-lo);margin-top:4px;}
+  .total-card.grand{border-color:var(--hull-dim);}
+ 
+  .chart-box{
+    margin-top:20px;background:var(--abyss-1);border:1px solid var(--abyss-3);border-radius:var(--radius);
+    padding:20px;height:340px;
+  }
+ 
+  footer{text-align:center;color:var(--text-lo);font-size:11.5px;padding:30px 20px 0;font-family:'JetBrains Mono',monospace;}
+ 
+  @media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important;}}
+</style>
+</head>
+<body>
+ 
+<div class="hero">
+  <svg class="tentacle-svg" viewBox="0 0 1080 340" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <linearGradient id="tg1" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#37c7f0" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="#37c7f0" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="tg2" x1="1" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#f0b429" stop-opacity="0.28"/>
+        <stop offset="100%" stop-color="#f0b429" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <path d="M -20 40 C 180 20, 220 160, 420 120 C 600 90, 640 220, 860 190" stroke="url(#tg1)" stroke-width="3" fill="none"/>
+    <path d="M 1100 20 C 900 10, 880 140, 700 110 C 560 90, 520 200, 340 180" stroke="url(#tg2)" stroke-width="3" fill="none"/>
+    <path d="M -40 300 C 160 320, 260 250, 460 290 C 620 320, 700 260, 900 300" stroke="url(#tg1)" stroke-width="2" fill="none"/>
+  </svg>
+  <div class="hero-inner">
+    <div class="eyebrow">NIKKE · KRAKEN RAID LOG</div>
+    <h1 class="title">크라켄 모듈 드랍 <span>분석기</span></h1>
+    <p class="subtitle">7 · 8 · 9단계 명시 확률을 기준값으로 두고, 실제 30일간의 플레이 기록을 대조합니다. 하루 3회 플레이, 스테이지당 상자 획득 여부와 커스텀 모듈 개수를 기록하면 기댓값과의 누적 격차를 자동으로 계산합니다.</p>
+    <div class="sucker-meter" id="suckerMeter" aria-hidden="true"></div>
+  </div>
+</div>
+ 
+<div class="wrap">
+ 
+  <!-- ============ 명시 확률표 ============ -->
+  <section id="probSection">
+    <div class="section-head">
+      <span class="section-num">01</span>
+      <h2 class="section-title">명시 확률표</h2>
+    </div>
+    <p class="section-desc">클리어 시 상자 획득 확률(단계별) → 상자 개봉 시 커스텀 모듈 개수 분포(공통) 순으로 적용됩니다.</p>
+    <div class="prob-grid" id="probGrid"></div>
+  </section>
+ 
+  <!-- ============ 기록 입력 ============ -->
+  <section id="inputSection">
+    <div class="section-head">
+      <span class="section-num">02</span>
+      <h2 class="section-title">30일 기록 입력</h2>
+    </div>
+    <p class="section-desc">플레이 1회당 상자를 못 얻었으면 <b>0</b>, 얻었다면 획득한 모듈 개수(<b>1~3개</b>)를 선택하세요. 입력은 자동 저장됩니다.</p>
+ 
+    <div class="tabs" role="tablist" id="stageTabs"></div>
+ 
+    <div class="grid-wrap">
+      <div class="grid-scroll">
+        <table id="inputTable">
+          <thead>
+            <tr>
+              <th style="text-align:left;">DAY</th>
+              <th>1회차</th>
+              <th>2회차</th>
+              <th>3회차</th>
+              <th>일일 합계</th>
+              <th>누적 합계</th>
+            </tr>
+          </thead>
+          <tbody id="inputBody"></tbody>
+        </table>
+      </div>
+      <div class="grid-toolbar">
+        <span id="saveStatus">불러오는 중…</span>
+        <button class="reset-btn" id="resetBtn" type="button">이 단계 기록 초기화</button>
+      </div>
+    </div>
+  </section>
+ 
+  <!-- ============ 분석 ============ -->
+  <section id="analysisSection">
+    <div class="section-head">
+      <span class="section-num">03</span>
+      <h2 class="section-title">기댓값 vs 실측값 분석</h2>
+    </div>
+    <p class="section-desc">일차별 · 단계별 누적 기댓값과 실제 획득량을 비교합니다. 초록은 기댓값 이상 획득, 빨강은 기댓값 미달을 의미합니다.</p>
+ 
+    <div class="analysis-wrap">
+      <div class="analysis-scroll">
+        <table class="analysis" id="analysisTable">
+          <thead>
+            <tr>
+              <th rowspan="2" style="text-align:left;">DAY</th>
+              <th colspan="3" class="grp7">7단계</th>
+              <th colspan="3" class="grp8">8단계</th>
+              <th colspan="3" class="grp9">9단계</th>
+            </tr>
+            <tr>
+              <th class="grp7">기대누적</th><th class="grp7">실제누적</th><th class="grp7">차이</th>
+              <th class="grp8">기대누적</th><th class="grp8">실제누적</th><th class="grp8">차이</th>
+              <th class="grp9">기대누적</th><th class="grp9">실제누적</th><th class="grp9">차이</th>
+            </tr>
+          </thead>
+          <tbody id="analysisBody"></tbody>
+        </table>
+      </div>
+    </div>
+ 
+    <div class="totals-grid" id="totalsGrid"></div>
+ 
+    <div class="chart-box">
+      <canvas id="cumChart"></canvas>
+    </div>
+  </section>
+ 
+</div>
+ 
+<footer>KRAKEN MODULE LOG · 자동 저장 · 이 브라우저 계정에만 저장됩니다</footer>
+ 
+<script>
+(function(){
+  "use strict";
+ 
+  // ---------- 확률 상수 ----------
+  var STAGES = [7,8,9];
+  var BOX_RATE = {7:0.6500, 8:0.6700, 9:0.6900};
+  var DIST = {1:0.700963, 2:0.289037, 3:0.010000};
+  var E_PER_BOX = 1*DIST[1] + 2*DIST[2] + 3*DIST[3];
+  var PLAYS_PER_DAY = 3;
+  var DAYS = 30;
+ 
+  function ePerPlay(s){ return BOX_RATE[s] * E_PER_BOX; }
+  function ePerDay(s){ return ePerPlay(s) * PLAYS_PER_DAY; }
+  function fmt(n, d){ d = (d===undefined)?6:d; return n.toLocaleString('ko-KR', {minimumFractionDigits:d, maximumFractionDigits:d}); }
+  function pct(n, d){ d = (d===undefined)?4:d; return (n*100).toFixed(d) + '%'; }
+ 
+  // ---------- 상태 ----------
+  var activeStage = 7;
+  var data = {};
+  STAGES.forEach(function(s){
+    data[s] = [];
+    for(var i=0;i<DAYS;i++) data[s].push([null,null,null]);
+  });
+ 
+  // ---------- 확률 카드 렌더 ----------
+  function renderProbGrid(){
+    var grid = document.getElementById('probGrid');
+    grid.innerHTML = '';
+    STAGES.forEach(function(s){
+      var card = document.createElement('div');
+      card.className = 'prob-card';
+      card.innerHTML =
+        '<h3>' + s + '단계 <span class="stage-tag">STAGE ' + s + '</span></h3>' +
+        '<div class="prob-row"><span class="k">상자 획득 확률</span><span class="v cyan">' + pct(BOX_RATE[s]) + '</span></div>' +
+        '<div class="prob-row"><span class="k">모듈 1개 획득 (상자 개봉 시)</span><span class="v">' + pct(DIST[1]) + '</span></div>' +
+        '<div class="prob-row"><span class="k">모듈 2개 획득 (상자 개봉 시)</span><span class="v">' + pct(DIST[2]) + '</span></div>' +
+        '<div class="prob-row"><span class="k">모듈 3개 획득 (상자 개봉 시)</span><span class="v">' + pct(DIST[3]) + '</span></div>' +
+        '<div class="expect-line"><span class="lbl">플레이 1회당 기댓값</span><span class="num">' + fmt(ePerPlay(s)) + '개</span></div>' +
+        '<div class="expect-line"><span class="lbl">30일(90회) 누적 기댓값</span><span class="num">' + fmt(ePerDay(s)*DAYS) + '개</span></div>';
+      grid.appendChild(card);
+    });
+  }
+ 
+  function renderSuckerMeter(){
+    var wrap = document.getElementById('suckerMeter');
+    wrap.innerHTML = '';
+    STAGES.forEach(function(s){
+      var rate = BOX_RATE[s];
+      var lit = Math.round(rate*10);
+      var row = document.createElement('div');
+      row.style.display='flex'; row.style.alignItems='center'; row.style.marginRight='18px';
+      var dots='';
+      for(var i=0;i<10;i++){ dots += '<span class="sucker' + (i<lit?' lit':'') + '"></span>'; }
+      row.innerHTML = dots + '<span class="sucker-label">' + s + '단계 ' + pct(rate) + '</span>';
+      row.style.gap='4px';
+      wrap.appendChild(row);
+    });
+  }
+ 
+  // ---------- 탭 ----------
+  function renderTabs(){
+    var tabs = document.getElementById('stageTabs');
+    tabs.innerHTML = '';
+    STAGES.forEach(function(s){
+      var btn = document.createElement('button');
+      btn.className = 'tab-btn' + (s===activeStage?' active':'');
+      btn.type = 'button';
+      btn.setAttribute('role','tab');
+      btn.textContent = s + '단계 입력';
+      btn.addEventListener('click', function(){
+        activeStage = s;
+        renderTabs();
+        renderInputGrid();
+      });
+      tabs.appendChild(btn);
+    });
+  }
+ 
+  // ---------- 입력 그리드 ----------
+  function dayActualSum(stage, dayIdx){
+    var vals = data[stage][dayIdx];
+    var sum = 0;
+    for(var i=0;i<vals.length;i++){ if(vals[i]!==null) sum += vals[i]; }
+    return sum;
+  }
+ 
+  function renderInputGrid(){
+    var body = document.getElementById('inputBody');
+    body.innerHTML = '';
+    var cum = 0;
+    for(var d=0; d<DAYS; d++){
+      var daySum = dayActualSum(activeStage, d);
+      cum += daySum;
+      var tr = document.createElement('tr');
+ 
+      var tdDay = document.createElement('td');
+      tdDay.className = 'day-cell';
+      tdDay.textContent = 'D+' + (d+1);
+      tr.appendChild(tdDay);
+ 
+      for(var p=0; p<3; p++){
+        var td = document.createElement('td');
+        var sel = document.createElement('select');
+        sel.className = 'play-select';
+        sel.setAttribute('aria-label', (d+1) + '일차 ' + (p+1) + '회차 획득 모듈 수');
+        var opts = ['<option value="">-</option>','<option value="0">0 (박스X)</option>','<option value="1">1개</option>','<option value="2">2개</option>','<option value="3">3개</option>'];
+        sel.innerHTML = opts.join('');
+        var cur = data[activeStage][d][p];
+        sel.value = (cur===null) ? '' : String(cur);
+        if(cur!==null) sel.classList.add('has-value');
+        (function(dayIdx, playIdx, selectEl){
+          selectEl.addEventListener('change', function(){
+            var v = selectEl.value;
+            data[activeStage][dayIdx][playIdx] = (v==='') ? null : parseInt(v,10);
+            selectEl.classList.toggle('has-value', v!=='');
+            renderInputGrid();
+            renderAnalysis();
+            scheduleSave();
+          });
+        })(d, p, sel);
+        td.appendChild(sel);
+        tr.appendChild(td);
+      }
+ 
+      var tdSum = document.createElement('td');
+      tdSum.className = 'sum-cell';
+      tdSum.textContent = daySum + '개';
+      tr.appendChild(tdSum);
+ 
+      var tdCum = document.createElement('td');
+      tdCum.className = 'cum-cell';
+      tdCum.textContent = cum + '개';
+      tr.appendChild(tdCum);
+ 
+      body.appendChild(tr);
+    }
+  }
+ 
+  // ---------- 분석 테이블 + 합계 + 차트 ----------
+  var chartInstance = null;
+ 
+  function cumulativeArrays(stage){
+    var expArr = [], actArr = [];
+    var ce = 0, ca = 0;
+    for(var d=0; d<DAYS; d++){
+      ce += ePerDay(stage);
+      ca += dayActualSum(stage, d);
+      expArr.push(ce);
+      actArr.push(ca);
+    }
+    return {exp: expArr, act: actArr};
+  }
+ 
+  function renderAnalysis(){
+    var body = document.getElementById('analysisBody');
+    body.innerHTML = '';
+    var series = {};
+    STAGES.forEach(function(s){ series[s] = cumulativeArrays(s); });
+ 
+    for(var d=0; d<DAYS; d++){
+      var tr = document.createElement('tr');
+      var tdDay = document.createElement('td');
+      tdDay.className = 'day-cell';
+      tdDay.textContent = 'D+' + (d+1);
+      tr.appendChild(tdDay);
+ 
+      STAGES.forEach(function(s){
+        var exp = series[s].exp[d];
+        var act = series[s].act[d];
+        var diff = act - exp;
+        var tdE = document.createElement('td'); tdE.textContent = fmt(exp);
+        var tdA = document.createElement('td'); tdA.textContent = act + '개';
+        var tdD = document.createElement('td');
+        tdD.textContent = (diff>=0?'+':'') + fmt(diff);
+        tdD.className = diff>=0 ? 'diff-pos' : 'diff-neg';
+        tr.appendChild(tdE); tr.appendChild(tdA); tr.appendChild(tdD);
+      });
+      body.appendChild(tr);
+    }
+ 
+    renderTotals(series);
+    renderChart(series);
+  }
+ 
+  function renderTotals(series){
+    var grid = document.getElementById('totalsGrid');
+    grid.innerHTML = '';
+ 
+    var grandExp = 0, grandAct = 0;
+ 
+    STAGES.forEach(function(s){
+      var exp = series[s].exp[DAYS-1];
+      var act = series[s].act[DAYS-1];
+      grandExp += exp; grandAct += act;
+ 
+      var card = document.createElement('div');
+      card.className = 'total-card';
+      card.innerHTML =
+        '<div class="t-label">' + s + '단계 · 30일 누적</div>' +
+        '<div class="t-value expected" style="color:var(--gold)">' + fmt(exp) + '</div>' +
+        '<div class="t-sub">기댓값 (개)</div>' +
+        '<div class="t-value actual" style="color:var(--cyan);margin-top:10px;">' + act + '</div>' +
+        '<div class="t-sub">실제 획득 (개) · 차이 ' + (act-exp>=0?'+':'') + fmt(act-exp) + '</div>';
+      grid.appendChild(card);
+    });
+ 
+    var grand = document.createElement('div');
+    grand.className = 'total-card grand';
+    grand.innerHTML =
+      '<div class="t-label">전체 3개 단계 합산</div>' +
+      '<div class="t-value expected">' + fmt(grandExp) + '</div>' +
+      '<div class="t-sub">기댓값 합계 (개)</div>' +
+      '<div class="t-value actual" style="margin-top:10px;">' + grandAct + '</div>' +
+      '<div class="t-sub">실제 합계 (개) · 차이 ' + (grandAct-grandExp>=0?'+':'') + fmt(grandAct-grandExp) + '</div>';
+    grid.appendChild(grand);
+  }
+ 
+  function renderChart(series){
+    // Chart.js가 로드되지 않았을 경우 에러 방지
+    if (typeof Chart === 'undefined') {
+      console.warn('Chart.js 라이브러리가 로드되지 않아 차트를 그릴 수 없습니다.');
+      return;
+    }
+
+    var canvas = document.getElementById('cumChart');
+    if(!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var labels = [];
+    for(var d=1; d<=DAYS; d++) labels.push('D+'+d);
+ 
+    var colors = {7:'#37c7f0', 8:'#f0b429', 9:'#e0679a'};
+    var datasets = [];
+    STAGES.forEach(function(s){
+      datasets.push({
+        label: s+'단계 기대누적',
+        data: series[s].exp,
+        borderColor: colors[s],
+        borderDash: [5,4],
+        borderWidth: 1.5,
+        pointRadius: 0,
+        tension: 0.15
+      });
+      datasets.push({
+        label: s+'단계 실제누적',
+        data: series[s].act,
+        borderColor: colors[s],
+        borderWidth: 2.5,
+        pointRadius: 0,
+        tension: 0.15
+      });
+    });
+ 
+    if(chartInstance){ chartInstance.destroy(); }
+    chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: { labels: labels, datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            labels: { color: '#a9b6c2', font: { family: "'JetBrains Mono', monospace", size: 10.5 }, boxWidth: 14 }
+          },
+          tooltip: {
+            backgroundColor: '#131b25', borderColor: '#1b2530', borderWidth: 1,
+            titleColor: '#e8edf2', bodyColor: '#a9b6c2',
+            titleFont: { family: "'JetBrains Mono', monospace" }, bodyFont: { family: "'JetBrains Mono', monospace" }
+          }
+        },
+        scales: {
+          x: { ticks: { color: '#647383', font:{size:10} }, grid: { color: 'rgba(255,255,255,0.04)' } },
+          y: { ticks: { color: '#647383', font:{size:10} }, grid: { color: 'rgba(255,255,255,0.05)' }, title: { display:true, text:'누적 모듈 개수', color:'#647383', font:{size:11} } }
+        }
+      }
+    });
+  }
+ 
+  // ---------- 저장/불러오기 (Standard localStorage fallback 추가) ----------
+  var STORAGE_KEY = 'kraken-progress';
+  var saveTimer = null;
+ 
+  function setStatus(text){
+    var el = document.getElementById('saveStatus');
+    if(el) el.textContent = text;
+  }
+ 
+  function scheduleSave(){
+    setStatus('저장 중…');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){
+      try {
+        if(window.storage && typeof window.storage.set === 'function'){
+          window.storage.set(STORAGE_KEY, JSON.stringify(data), false)
+            .then(function(res){
+              var t = new Date();
+              setStatus('저장됨 · ' + t.getHours() + ':' + String(t.getMinutes()).padStart(2,'0'));
+            })
+            .catch(function(){ setStatus('저장 실패 — 다시 시도해주세요'); });
+        } else {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          var t = new Date();
+          setStatus('저장됨 · ' + t.getHours() + ':' + String(t.getMinutes()).padStart(2,'0'));
+        }
+      } catch(e) {
+        setStatus('저장 실패 — 다시 시도해주세요');
+      }
+    }, 450);
+  }
+ 
+  function loadData(){
+    setStatus('불러오는 중…');
+    if(window.storage && typeof window.storage.get === 'function'){
+      window.storage.get(STORAGE_KEY, false)
+        .then(function(res){
+          if(res && res.value){
+            try{
+              var parsed = JSON.parse(res.value);
+              STAGES.forEach(function(s){
+                if(parsed[s] && parsed[s].length === DAYS){ data[s] = parsed[s]; }
+              });
+            }catch(e){ /* keep defaults */ }
+          }
+          setStatus('불러옴');
+        })
+        .catch(function(){ setStatus('신규 기록 시작'); })
+        .then(function(){
+          renderInputGrid();
+          renderAnalysis();
+        });
+    } else {
+      try {
+        var localVal = localStorage.getItem(STORAGE_KEY);
+        if(localVal){
+          var parsed = JSON.parse(localVal);
+          STAGES.forEach(function(s){
+            if(parsed[s] && parsed[s].length === DAYS){ data[s] = parsed[s]; }
+          });
+          setStatus('불러옴');
+        } else {
+          setStatus('신규 기록 시작');
+        }
+      } catch(e) {
+        setStatus('신규 기록 시작');
+      }
+      renderInputGrid();
+      renderAnalysis();
+    }
+  }
+ 
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    var ok = confirm(activeStage + '단계의 30일 기록을 모두 초기화할까요? 되돌릴 수 없습니다.');
+    if(!ok) return;
+    for(var i=0;i<DAYS;i++) data[activeStage][i] = [null,null,null];
+    renderInputGrid();
+    renderAnalysis();
+    scheduleSave();
+  });
+ 
+  // ---------- 초기화 ----------
+  renderProbGrid();
+  renderSuckerMeter();
+  renderTabs();
+  renderInputGrid();
+  renderAnalysis();
+  loadData();
+ 
+})();
+</script>
+</body>
+</html>
