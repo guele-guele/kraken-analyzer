@@ -76,7 +76,7 @@
   <header>
     <h1>크라켄 분석기</h1>
     <div class="header-right">
-      <div id="saveStatus">서버 연동 중…</div>
+      <div id="saveStatus">서버 연결 중…</div>
       <button type="button" class="btn-manual-save" id="manualSaveBtn">💾 기록 저장하기</button>
     </div>
   </header>
@@ -131,7 +131,6 @@
     <canvas id="cumChart"></canvas>
   </div>
 
-  <!-- Firebase SDK 호환 버전 -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -170,10 +169,13 @@
 
     var activeStage = 7;
     var data = {};
-    STAGES.forEach(function(s){
-      data[s] = [];
-      for(var i=0;i<DAYS;i++) data[s].push([null,null,null]);
-    });
+    function initEmptyData() {
+      STAGES.forEach(function(s){
+        data[s] = [];
+        for(var i=0;i<DAYS;i++) data[s].push([null,null,null]);
+      });
+    }
+    initEmptyData();
 
     function setStatus(text){
       var el = document.getElementById('saveStatus');
@@ -186,12 +188,12 @@
         .then(function(){
           var t = new Date();
           var timeStr = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
-          setStatus('저장완료 (' + timeStr + ')');
-          if(isManual){ alert('서버에 성공적으로 저장되었습니다!'); }
+          setStatus('공유 완료 (' + timeStr + ')');
+          if(isManual){ alert('모든 사용자 공유 서버에 기록을 저장했습니다!'); }
         })
         .catch(function(err){
           console.error(err);
-          setStatus('저장 실패 (오류 발생)');
+          setStatus('저장 실패 (권한 없음)');
           if(isManual){ alert('저장에 실패했습니다. Firebase 규칙을 확인하세요.'); }
         });
     }
@@ -411,6 +413,7 @@
       });
     }
 
+    // 서버 변경사항 실시간 수신
     function listenData(){
       dbRef.on('value', function(snapshot){
         var val = snapshot.val();
@@ -418,7 +421,7 @@
           STAGES.forEach(function(s){
             if(val[s] && val[s].length === DAYS){ data[s] = val[s]; }
           });
-          setStatus('서버 연동 완료');
+          setStatus('실시간 공유 연동 중');
         } else {
           setStatus('연동 완료 (데이터 없음)');
         }
@@ -426,7 +429,7 @@
         renderAnalysis();
       }, function(err){
         console.error(err);
-        setStatus('서버 연동 오류!');
+        setStatus('서버 연동 오류');
       });
     }
 
@@ -440,7 +443,7 @@
     var resetBtn = document.getElementById('resetBtn');
     if(resetBtn){
       resetBtn.addEventListener('click', function(){
-        var ok = confirm(activeStage + '단계 기록을 초기화하시겠습니까?');
+        var ok = confirm('모든 사용자와 공유되는 ' + activeStage + '단계 기록을 초기화하시겠습니까?');
         if(!ok) return;
         for(var i=0;i<DAYS;i++) data[activeStage][i] = [null,null,null];
         renderInputGrid();
