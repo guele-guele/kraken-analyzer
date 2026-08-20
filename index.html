@@ -8,27 +8,37 @@
   <style>
     :root {
       --bg-color: #0f172a;
-      --card-bg: #1e293b;
+      --card-bg: rgba(30, 41, 59, 0.85); /* 시독성을 위한 반투명 배경 */
+      --card-bg-solid: #1e293b;
       --text-main: #f8fafc;
       --text-sub: #94a3b8;
       --cyan: #37c7f0;
       --gold: #f0b429;
       --pink: #ff4757;
-      --border: #334155;
+      --border: rgba(51, 65, 85, 0.8);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg-color); color: var(--text-main); padding: 20px; max-width: 1300px; margin: 0 auto; }
+    
+    /* 크라켄 이미지 배경 설정 */
+    body { 
+      background: linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.85)), url('kraken.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: var(--text-main); 
+      padding: 20px; 
+      max-width: 1300px; 
+      margin: 0 auto; 
+    }
 
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
-    h1 { font-size: 1.5rem; color: var(--cyan); }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); backdrop-filter: blur(4px); }
+    h1 { font-size: 1.5rem; color: var(--cyan); text-shadow: 0 0 10px rgba(55,199,240,0.3); }
     .header-right { display: flex; align-items: center; gap: 12px; }
     #saveStatus { font-size: 0.9rem; color: var(--gold); font-weight: bold; }
     .btn-manual-save { background: var(--cyan); color: #000; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
     .btn-manual-save:hover { opacity: 0.9; }
 
     .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .prob-card { background: var(--card-bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border); }
+    .prob-card { background: var(--card-bg); backdrop-filter: blur(8px); padding: 16px; border-radius: 8px; border: 1px solid var(--border); }
     .prob-card h3 { font-size: 1.1rem; margin-bottom: 12px; display: flex; justify-content: space-between; }
     .stage-tag { font-size: 0.75rem; background: rgba(55,199,240,0.2); color: var(--cyan); padding: 2px 6px; border-radius: 4px; }
     .prob-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-sub); }
@@ -37,24 +47,24 @@
     .expect-line { display: flex; justify-content: space-between; border-top: 1px dashed var(--border); margin-top: 8px; padding-top: 8px; font-weight: bold; font-size: 0.9rem; }
     .expect-line .num { color: var(--gold); }
 
-    .sucker-meter { display: flex; flex-wrap: wrap; background: var(--card-bg); padding: 12px 16px; border-radius: 8px; margin-bottom: 24px; border: 1px solid var(--border); }
+    .sucker-meter { display: flex; flex-wrap: wrap; background: var(--card-bg); backdrop-filter: blur(8px); padding: 12px 16px; border-radius: 8px; margin-bottom: 24px; border: 1px solid var(--border); }
     .sucker { width: 8px; height: 8px; border-radius: 50%; background: #475569; }
-    .sucker.lit { background: var(--cyan); }
+    .sucker.lit { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
     .sucker-label { font-size: 0.8rem; color: var(--text-sub); margin-left: 6px; }
 
     .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
-    .tab-btn { background: var(--card-bg); color: var(--text-sub); border: 1px solid var(--border); padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .tab-btn { background: var(--card-bg); backdrop-filter: blur(8px); color: var(--text-sub); border: 1px solid var(--border); padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
     .tab-btn.active { background: var(--cyan); color: #000; border-color: var(--cyan); }
 
-    .table-container { background: var(--card-bg); border-radius: 8px; overflow-x: auto; border: 1px solid var(--border); margin-bottom: 24px; }
+    .table-container { background: var(--card-bg); backdrop-filter: blur(8px); border-radius: 8px; overflow-x: auto; border: 1px solid var(--border); margin-bottom: 24px; }
     table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem; }
     th, td { padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-    th { background: #0f172a; color: var(--text-sub); }
+    th { background: rgba(15, 23, 42, 0.9); color: var(--text-sub); }
 
-    th.burst-col { background: rgba(255, 71, 87, 0.15); color: var(--pink); }
-    td.burst-cell { background: rgba(255, 71, 87, 0.05); }
+    th.burst-col { background: rgba(255, 71, 87, 0.2); color: var(--pink); }
+    td.burst-cell { background: rgba(255, 71, 87, 0.08); }
 
-    .play-select { background: #0f172a; color: var(--text-main); border: 1px solid var(--border); border-radius: 4px; padding: 4px 6px; }
+    .play-select { background: rgba(15, 23, 42, 0.9); color: var(--text-main); border: 1px solid var(--border); border-radius: 4px; padding: 4px 6px; }
     .play-select.has-value { border-color: var(--cyan); color: var(--cyan); font-weight: bold; }
     .play-select:disabled { opacity: 0.25; cursor: not-allowed; }
 
@@ -67,13 +77,13 @@
     .diff-neg { color: #f87171; }
 
     .totals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .total-card { background: var(--card-bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border); }
+    .total-card { background: var(--card-bg); backdrop-filter: blur(8px); padding: 16px; border-radius: 8px; border: 1px solid var(--border); }
     .total-card.grand { border-color: var(--cyan); }
     .t-label { font-size: 0.8rem; color: var(--text-sub); margin-bottom: 4px; }
     .t-value { font-size: 1.2rem; font-weight: bold; }
     .t-sub { font-size: 0.75rem; color: var(--text-sub); margin-top: 2px; }
 
-    .chart-container { background: var(--card-bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border); height: 320px; margin-bottom: 24px; }
+    .chart-container { background: var(--card-bg); backdrop-filter: blur(8px); padding: 16px; border-radius: 8px; border: 1px solid var(--border); height: 320px; margin-bottom: 24px; }
 
     .ctrl-bar { display: flex; justify-content: flex-end; }
     .btn-reset { background: #ef4444; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
@@ -118,7 +128,7 @@
     <button class="btn-reset" id="resetBtn" type="button">현재 단계 기록 초기화</button>
   </div>
 
-  <h2 style="font-size: 1.2rem; margin-bottom: 12px; color: var(--text-main);">30일 누적 분석 및 기댓값 비교</h2>
+  <h2 style="font-size: 1.2rem; margin-bottom: 12px; color: var(--text-main); text-shadow: 0 1px 4px rgba(0,0,0,0.8);">30일 누적 분석 및 기댓값 비교</h2>
   <div class="table-container">
     <table>
       <thead>
@@ -470,7 +480,19 @@
       chartInstance = new Chart(ctx, {
         type: 'line',
         data: { labels: labels, datasets: datasets },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: '#f8fafc' }
+            }
+          },
+          scales: {
+            x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51, 65, 85, 0.5)' } },
+            y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51, 65, 85, 0.5)' } }
+          }
+        }
       });
     }
 
