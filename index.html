@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>크라켄 분석기 (풀버스트 지원)</title>
+  <title>크라켄 모듈 누적 기록기</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -13,136 +13,113 @@
       --text-sub: #94a3b8;
       --cyan: #37c7f0;
       --gold: #f0b429;
-      --pink: #ff4757;
+      --red: #ef4444;
       --border: #334155;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg-color); color: var(--text-main); padding: 20px; max-width: 1300px; margin: 0 auto; }
+    body { background: var(--bg-color); color: var(--text-main); padding: 20px; max-width: 1000px; margin: 0 auto; }
 
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
-    h1 { font-size: 1.5rem; color: var(--cyan); }
-    .header-right { display: flex; align-items: center; gap: 12px; }
-    #saveStatus { font-size: 0.9rem; color: var(--gold); font-weight: bold; }
-    .btn-manual-save { background: var(--cyan); color: #000; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-    .btn-manual-save:hover { opacity: 0.9; }
+    h1 { font-size: 1.4rem; color: var(--cyan); }
+    #statusText { font-size: 0.85rem; color: var(--gold); font-weight: bold; }
 
-    .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .prob-card { background: var(--card-bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border); }
-    .prob-card h3 { font-size: 1.1rem; margin-bottom: 12px; display: flex; justify-content: space-between; }
-    .stage-tag { font-size: 0.75rem; background: rgba(55,199,240,0.2); color: var(--cyan); padding: 2px 6px; border-radius: 4px; }
-    .prob-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-sub); }
-    .prob-row .v { color: var(--text-main); font-weight: bold; }
-    .prob-row .cyan { color: var(--cyan); }
-    .expect-line { display: flex; justify-content: space-between; border-top: 1px dashed var(--border); margin-top: 8px; padding-top: 8px; font-weight: bold; font-size: 0.9rem; }
-    .expect-line .num { color: var(--gold); }
+    /* 입력 폼 영역 */
+    .input-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 18px; margin-bottom: 24px; }
+    .input-card h2 { font-size: 1rem; color: var(--text-main); margin-bottom: 14px; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 14px; }
+    
+    .field-group { display: flex; flex-direction: column; gap: 6px; }
+    .field-group label { font-size: 0.8rem; color: var(--text-sub); }
+    .field-group select, .field-group input { background: #0f172a; color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; padding: 10px; font-size: 0.95rem; }
+    
+    .btn-add { width: 100%; background: var(--cyan); color: #000; border: none; padding: 12px; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+    .btn-add:hover { opacity: 0.9; }
 
-    .sucker-meter { display: flex; flex-wrap: wrap; background: var(--card-bg); padding: 12px 16px; border-radius: 8px; margin-bottom: 24px; border: 1px solid var(--border); }
-    .sucker { width: 8px; height: 8px; border-radius: 50%; background: #475569; }
-    .sucker.lit { background: var(--cyan); }
-    .sucker-label { font-size: 0.8rem; color: var(--text-sub); margin-left: 6px; }
+    /* 통계 요약 카드 */
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .sum-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-align: center; }
+    .sum-title { font-size: 0.85rem; color: var(--text-sub); margin-bottom: 6px; }
+    .sum-value { font-size: 1.5rem; font-weight: bold; }
 
-    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
-    .tab-btn { background: var(--card-bg); color: var(--text-sub); border: 1px solid var(--border); padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-    .tab-btn.active { background: var(--cyan); color: #000; border-color: var(--cyan); }
-
-    .table-container { background: var(--card-bg); border-radius: 8px; overflow-x: auto; border: 1px solid var(--border); margin-bottom: 24px; }
-    table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem; }
-    th, td { padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    /* 데이터 리스트 표 */
+    .table-container { background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.9rem; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
     th { background: #0f172a; color: var(--text-sub); }
+    
+    .btn-del { background: transparent; color: var(--red); border: 1px solid var(--red); padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; }
+    .btn-del:hover { background: var(--red); color: #fff; }
 
-    /* 풀버스트 컬럼 강조 */
-    th.burst-col { background: rgba(255, 71, 87, 0.15); color: var(--pink); }
-    td.burst-cell { background: rgba(255, 71, 87, 0.05); }
-
-    .play-select { background: #0f172a; color: var(--text-main); border: 1px solid var(--border); border-radius: 4px; padding: 4px 6px; }
-    .play-select.has-value { border-color: var(--cyan); color: var(--cyan); font-weight: bold; }
-    .play-select:disabled { opacity: 0.25; cursor: not-allowed; }
-
-    .burst-check { width: 16px; height: 16px; accent-color: var(--pink); cursor: pointer; }
-
-    .sum-cell { font-weight: bold; color: var(--gold); }
-    .cum-cell { font-weight: bold; color: var(--cyan); }
-
-    .diff-pos { color: #4ade80; }
-    .diff-neg { color: #f87171; }
-
-    .totals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .total-card { background: var(--card-bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border); }
-    .total-card.grand { border-color: var(--cyan); }
-    .t-label { font-size: 0.8rem; color: var(--text-sub); margin-bottom: 4px; }
-    .t-value { font-size: 1.2rem; font-weight: bold; }
-    .t-sub { font-size: 0.75rem; color: var(--text-sub); margin-top: 2px; }
-
-    .chart-container { background: var(--card-bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border); height: 320px; margin-bottom: 24px; }
-
-    .ctrl-bar { display: flex; justify-content: flex-end; }
-    .btn-reset { background: #ef4444; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .empty-msg { padding: 30px; text-align: center; color: var(--text-sub); font-size: 0.9rem; }
   </style>
 </head>
 <body>
 
   <header>
-    <h1>크라켄 분석기</h1>
-    <div class="header-right">
-      <div id="saveStatus">서버 연결 중…</div>
-      <button type="button" class="btn-manual-save" id="manualSaveBtn">💾 기록 저장하기</button>
-    </div>
+    <h1>크라켄 모듈 누적 기록기</h1>
+    <div id="statusText">서버 연결 중…</div>
   </header>
 
-  <div class="grid-container" id="probGrid"></div>
-  <div class="sucker-meter" id="suckerMeter"></div>
-  <div class="tabs" id="stageTabs"></div>
+  <!-- 일차별 모듈 입력 폼 -->
+  <div class="input-card">
+    <h2>📝 일일 모듈 획득 기록 추가</h2>
+    <form id="recordForm">
+      <div class="form-grid">
+        <div class="field-group">
+          <label for="stageSelect">단계</label>
+          <select id="stageSelect" required>
+            <option value="7">7단계</option>
+            <option value="8">8단계</option>
+            <option value="9">9단계</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label for="dayInput">일차 (예: 1)</label>
+          <input type="number" id="dayInput" min="1" max="100" placeholder="일차 입력" required>
+        </div>
+        <div class="field-group">
+          <label for="moduleInput">하루 총 획득 모듈 (개)</label>
+          <input type="number" id="moduleInput" min="0" max="9" placeholder="0 ~ 9" required>
+        </div>
+      </div>
+      <button type="submit" class="btn-add">공유 서버에 기록 등록하기</button>
+    </form>
+  </div>
 
-  <!-- 입력 테이블 -->
+  <!-- 요약 통계 -->
+  <div class="summary-grid">
+    <div class="sum-card">
+      <div class="sum-title">전체 등록 횟수</div>
+      <div class="sum-value" id="totalCount" style="color:var(--text-main)">0회</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-title">총 획득 모듈</div>
+      <div class="sum-value" id="totalModules" style="color:var(--cyan)">0개</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-title">누적 기댓값 합계</div>
+      <div class="sum-value" id="expectedModules" style="color:var(--gold)">0개</div>
+    </div>
+  </div>
+
+  <!-- 실시간 누적 기록 표 -->
   <div class="table-container">
     <table>
       <thead>
         <tr>
+          <th>등록 시간</th>
+          <th>단계</th>
           <th>일차</th>
-          <th style="color:var(--pink)">🔥 풀버스트</th>
-          <th>1회차</th>
-          <th>2회차</th>
-          <th>3회차</th>
-          <th class="burst-col">4회차 (추가)</th>
-          <th class="burst-col">5회차 (추가)</th>
-          <th class="burst-col">6회차 (추가)</th>
-          <th>일일 합계</th>
-          <th>누적 합계</th>
+          <th>실제 획득</th>
+          <th>1일 기댓값</th>
+          <th>관리</th>
         </tr>
       </thead>
-      <tbody id="inputBody"></tbody>
+      <tbody id="logTableBody">
+        <tr><td colspan="6" class="empty-msg">기록을 불러오는 중입니다…</td></tr>
+      </tbody>
     </table>
-  </div>
-
-  <div class="ctrl-bar" style="margin-bottom: 24px;">
-    <button class="btn-reset" id="resetBtn" type="button">현재 단계 기록 초기화</button>
-  </div>
-
-  <h2 style="font-size: 1.2rem; margin-bottom: 12px; color: var(--text-main);">30일 누적 분석 및 기댓값 비교</h2>
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th rowspan="2">일차</th>
-          <th colspan="3">7단계</th>
-          <th colspan="3">8단계</th>
-          <th colspan="3">9단계</th>
-        </tr>
-        <tr>
-          <th>기대</th><th>실제</th><th>차이</th>
-          <th>기대</th><th>실제</th><th>차이</th>
-          <th>기대</th><th>실제</th><th>차이</th>
-        </tr>
-      </thead>
-      <tbody id="analysisBody"></tbody>
-    </table>
-  </div>
-
-  <div class="totals-grid" id="totalsGrid"></div>
-
-  <div class="chart-container">
-    <canvas id="cumChart"></canvas>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -152,6 +129,7 @@
   (function(){
     "use strict";
 
+    // Firebase 설정
     const firebaseConfig = {
       apiKey: "AIzaSyAgkmoejYnv7qK6jtFfdzUHvuPceXBQxRE",
       authDomain: "kraken-log.firebaseapp.com",
@@ -167,386 +145,115 @@
     }
     
     const database = firebase.database();
-    const dbRef = database.ref('shared_kraken_full_data');
+    // 신규 리스트 데이터 베이스 경로 지정
+    const dbRef = database.ref('kraken_logs_list');
 
-    var STAGES = [7,8,9];
-    var BOX_RATE = {7:0.6500, 8:0.6700, 9:0.6900};
-    var DIST = {1:0.700963, 2:0.289037, 3:0.010000};
-    var E_PER_BOX = 1*DIST[1] + 2*DIST[2] + 3*DIST[3];
-    var DAYS = 30;
-
-    function ePerPlay(s){ return BOX_RATE[s] * E_PER_BOX; }
-    function fmt(n, d){ d = (d===undefined)?6:d; return n.toLocaleString('ko-KR', {minimumFractionDigits:d, maximumFractionDigits:d}); }
-    function pct(n, d){ d = (d===undefined)?4:d; return (n*100).toFixed(d) + '%'; }
-
-    var activeStage = 7;
-    var data = {};
+    // 단계별 1일(3회) 기준 기댓값 공식
+    // 상자확률 * (1*0.700963 + 2*0.289037 + 3*0.01) * 3
+    var BOX_RATES = { 7: 0.65, 8: 0.67, 9: 0.69 };
+    var E_PER_BOX = 1 * 0.700963 + 2 * 0.289037 + 3 * 0.01;
     
-    // 기본 데이터 구조 초기화
-    function initEmptyData() {
-      STAGES.forEach(function(s){
-        data[s] = [];
-        for(var i=0; i<DAYS; i++){
-          data[s].push({
-            isBurst: false,
-            p: [null, null, null, null, null, null]
-          });
-        }
-      });
-    }
-    initEmptyData();
-
-    function setStatus(text){
-      var el = document.getElementById('saveStatus');
-      if(el) el.textContent = text;
+    function getExpectedPerDay(stage) {
+      return (BOX_RATES[stage] || 0.65) * E_PER_BOX * 3;
     }
 
-    function saveDataToServer(isManual){
-      setStatus('저장 중…');
-      dbRef.set(data)
+    var statusEl = document.getElementById('statusText');
+
+    // 1. 폼 제출 시 Firebase에 기록 추가 (push)
+    document.getElementById('recordForm').addEventListener('submit', function(e){
+      e.preventDefault();
+      
+      var stage = parseInt(document.getElementById('stageSelect').value, 10);
+      var day = parseInt(document.getElementById('dayInput').value, 10);
+      var count = parseInt(document.getElementById('moduleInput').value, 10);
+
+      var newLog = {
+        stage: stage,
+        day: day,
+        count: count,
+        createdAt: new Date().toLocaleString('ko-KR')
+      };
+
+      statusEl.textContent = '저장 중…';
+      dbRef.push(newLog)
         .then(function(){
-          var t = new Date();
-          var timeStr = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
-          setStatus('저장완료 (' + timeStr + ')');
-          if(isManual){ alert('서버에 정상적으로 저장되었습니다!'); }
+          statusEl.textContent = '공유 저장 완료!';
+          document.getElementById('moduleInput').value = '';
+          // 다음 일차 자동 1 증가
+          document.getElementById('dayInput').value = day + 1;
         })
         .catch(function(err){
           console.error(err);
-          setStatus('저장 실패!');
+          alert('저장 실패: Firebase 권한 규칙을 확인하세요.');
+          statusEl.textContent = '저장 실패';
         });
-    }
+    });
 
-    function renderProbGrid(){
-      var grid = document.getElementById('probGrid');
-      if(!grid) return;
-      grid.innerHTML = '';
-      STAGES.forEach(function(s){
-        var card = document.createElement('div');
-        card.className = 'prob-card';
-        card.innerHTML =
-          '<h3>' + s + '단계 <span class="stage-tag">STAGE ' + s + '</span></h3>' +
-          '<div class="prob-row"><span class="k">상자 획득 확률</span><span class="v cyan">' + pct(BOX_RATE[s]) + '</span></div>' +
-          '<div class="prob-row"><span class="k">모듈 1개 획득</span><span class="v">' + pct(DIST[1]) + '</span></div>' +
-          '<div class="prob-row"><span class="k">모듈 2개 획득</span><span class="v">' + pct(DIST[2]) + '</span></div>' +
-          '<div class="prob-row"><span class="k">모듈 3개 획득</span><span class="v">' + pct(DIST[3]) + '</span></div>' +
-          '<div class="expect-line"><span class="lbl">1회당 기댓값</span><span class="num">' + fmt(ePerPlay(s)) + '개</span></div>' +
-          '<div class="expect-line"><span class="lbl">일반일(3회) 기댓값</span><span class="num">' + fmt(ePerPlay(s)*3) + '개</span></div>' +
-          '<div class="expect-line"><span class="lbl">풀버스트(6회) 기댓값</span><span class="num" style="color:var(--pink)">' + fmt(ePerPlay(s)*6) + '개</span></div>';
-        grid.appendChild(card);
-      });
-    }
-
-    function renderSuckerMeter(){
-      var wrap = document.getElementById('suckerMeter');
-      if(!wrap) return;
-      wrap.innerHTML = '';
-      STAGES.forEach(function(s){
-        var rate = BOX_RATE[s];
-        var lit = Math.round(rate*10);
-        var row = document.createElement('div');
-        row.style.display='flex'; row.style.alignItems='center'; row.style.marginRight='18px';
-        var dots='';
-        for(var i=0;i<10;i++){ dots += '<span class="sucker' + (i<lit?' lit':'') + '"></span>'; }
-        row.innerHTML = dots + '<span class="sucker-label">' + s + '단계 ' + pct(rate) + '</span>';
-        row.style.gap='4px';
-        wrap.appendChild(row);
-      });
-    }
-
-    function renderTabs(){
-      var tabs = document.getElementById('stageTabs');
-      if(!tabs) return;
-      tabs.innerHTML = '';
-      STAGES.forEach(function(s){
-        var btn = document.createElement('button');
-        btn.className = 'tab-btn' + (s===activeStage?' active':'');
-        btn.type = 'button';
-        btn.textContent = s + '단계 입력';
-        btn.addEventListener('click', function(){
-          activeStage = s;
-          renderTabs();
-          renderInputGrid();
-        });
-        tabs.appendChild(btn);
-      });
-    }
-
-    function dayActualSum(stage, dayIdx){
-      var dayObj = data[stage][dayIdx];
-      if(!dayObj) return 0;
-      var sum = 0;
-      var maxPlays = dayObj.isBurst ? 6 : 3;
-      for(var i=0; i<maxPlays; i++){
-        if(dayObj.p[i] !== null && dayObj.p[i] !== undefined) {
-          sum += Number(dayObj.p[i]);
-        }
+    // 2. 단건 삭제 함수
+    window.deleteLog = function(key) {
+      if(confirm('이 기록을 서버에서 삭제하시겠습니까?')){
+        dbRef.child(key).remove();
       }
-      return sum;
-    }
+    };
 
-    function dayExpectedSum(stage, dayIdx){
-      var dayObj = data[stage][dayIdx];
-      var plays = (dayObj && dayObj.isBurst) ? 6 : 3;
-      return ePerPlay(stage) * plays;
-    }
+    // 3. 서버 실시간 동기화 수신 (다른 사람 접속 시에도 실시간 자동 업데이트)
+    dbRef.on('value', function(snapshot){
+      var data = snapshot.val();
+      var tbody = document.getElementById('logTableBody');
+      tbody.innerHTML = '';
 
-    function renderInputGrid(){
-      var body = document.getElementById('inputBody');
-      if(!body) return;
-      body.innerHTML = '';
-      var cum = 0;
+      if(!data){
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">등록된 기록이 없습니다. 위 폼에서 작성해 보세요.</td></tr>';
+        document.getElementById('totalCount').textContent = '0회';
+        document.getElementById('totalModules').textContent = '0개';
+        document.getElementById('expectedModules').textContent = '0개';
+        statusEl.textContent = '실시간 공유 중 (데이터 없음)';
+        return;
+      }
 
-      for(var d=0; d<DAYS; d++){
-        var dayData = data[activeStage][d] || { isBurst: false, p: [null,null,null,null,null,null] };
-        var daySum = dayActualSum(activeStage, d);
-        cum += daySum;
+      var totalAct = 0;
+      var totalExp = 0;
+      var itemCount = 0;
+
+      // 데이터를 배열로 변환 후 일차 내림차순 정렬
+      var keys = Object.keys(data);
+      var list = keys.map(function(k){
+        return { key: k, val: data[k] };
+      });
+
+      list.sort(function(a,b){ return b.val.day - a.val.day; });
+
+      list.forEach(function(item){
+        var key = item.key;
+        var log = item.val;
+        itemCount++;
+
+        var exp = getExpectedPerDay(log.stage);
+        totalAct += log.count;
+        totalExp += exp;
 
         var tr = document.createElement('tr');
-
-        // 일차
-        var tdDay = document.createElement('td');
-        tdDay.className = 'day-cell';
-        tdDay.textContent = 'D+' + (d+1);
-        tr.appendChild(tdDay);
-
-        // 풀버스트 체크박스
-        var tdBurst = document.createElement('td');
-        var chk = document.createElement('input');
-        chk.type = 'checkbox';
-        chk.className = 'burst-check';
-        chk.checked = !!dayData.isBurst;
-
-        (function(dayIdx, checkboxEl){
-          checkboxEl.addEventListener('change', function(){
-            data[activeStage][dayIdx].isBurst = checkboxEl.checked;
-            // 체크 해제 시 4~6회차 데이터 null 처리
-            if(!checkboxEl.checked){
-              data[activeStage][dayIdx].p[3] = null;
-              data[activeStage][dayIdx].p[4] = null;
-              data[activeStage][dayIdx].p[5] = null;
-            }
-            renderInputGrid();
-            renderAnalysis();
-            saveDataToServer(false);
-          });
-        })(d, chk);
-
-        tdBurst.appendChild(chk);
-        tr.appendChild(tdBurst);
-
-        // 1~6회차 드롭다운 생성
-        for(var p=0; p<6; p++){
-          var td = document.createElement('td');
-          if(p >= 3) td.className = 'burst-cell';
-
-          var sel = document.createElement('select');
-          sel.className = 'play-select';
-          sel.innerHTML = '<option value="">-</option><option value="0">0 (박스X)</option><option value="1">1개</option><option value="2">2개</option><option value="3">3개</option>';
-
-          // 4~6회차는 풀버스트 체크 상태에서만 활성화
-          if(p >= 3 && !dayData.isBurst){
-            sel.disabled = true;
-          }
-
-          var curVal = dayData.p[p];
-          sel.value = (curVal === null || curVal === undefined) ? '' : String(curVal);
-          if(curVal !== null && curVal !== undefined && (!sel.disabled)) sel.classList.add('has-value');
-
-          (function(dayIdx, playIdx, selectEl){
-            selectEl.addEventListener('change', function(){
-              var v = selectEl.value;
-              data[activeStage][dayIdx].p[playIdx] = (v === '') ? null : parseInt(v, 10);
-              renderInputGrid();
-              renderAnalysis();
-              saveDataToServer(false);
-            });
-          })(d, p, sel);
-
-          td.appendChild(sel);
-          tr.appendChild(td);
-        }
-
-        // 일일 합계
-        var tdSum = document.createElement('td');
-        tdSum.className = 'sum-cell';
-        tdSum.textContent = daySum + '개';
-        tr.appendChild(tdSum);
-
-        // 누적 합계
-        var tdCum = document.createElement('td');
-        tdCum.className = 'cum-cell';
-        tdCum.textContent = cum + '개';
-        tr.appendChild(tdCum);
-
-        body.appendChild(tr);
-      }
-    }
-
-    var chartInstance = null;
-    function cumulativeArrays(stage){
-      var expArr = [], actArr = [];
-      var ce = 0, ca = 0;
-      for(var d=0; d<DAYS; d++){
-        ce += dayExpectedSum(stage, d);
-        ca += dayActualSum(stage, d);
-        expArr.push(ce);
-        actArr.push(ca);
-      }
-      return {exp: expArr, act: actArr};
-    }
-
-    function renderAnalysis(){
-      var body = document.getElementById('analysisBody');
-      if(!body) return;
-      body.innerHTML = '';
-      var series = {};
-      STAGES.forEach(function(s){ series[s] = cumulativeArrays(s); });
-
-      for(var d=0; d<DAYS; d++){
-        var tr = document.createElement('tr');
-        var tdDay = document.createElement('td');
-        tdDay.className = 'day-cell';
-        tdDay.textContent = 'D+' + (d+1);
-        tr.appendChild(tdDay);
-
-        STAGES.forEach(function(s){
-          var exp = series[s].exp[d];
-          var act = series[s].act[d];
-          var diff = act - exp;
-          var tdE = document.createElement('td'); tdE.textContent = fmt(exp);
-          var tdA = document.createElement('td'); tdA.textContent = act + '개';
-          var tdD = document.createElement('td');
-          tdD.textContent = (diff>=0?'+':'') + fmt(diff);
-          tdD.className = diff>=0 ? 'diff-pos' : 'diff-neg';
-          tr.appendChild(tdE); tr.appendChild(tdA); tr.appendChild(tdD);
-        });
-        body.appendChild(tr);
-      }
-
-      renderTotals(series);
-      renderChart(series);
-    }
-
-    function renderTotals(series){
-      var grid = document.getElementById('totalsGrid');
-      if(!grid) return;
-      grid.innerHTML = '';
-      var grandExp = 0, grandAct = 0;
-
-      STAGES.forEach(function(s){
-        var exp = series[s].exp[DAYS-1];
-        var act = series[s].act[DAYS-1];
-        grandExp += exp; grandAct += act;
-
-        var card = document.createElement('div');
-        card.className = 'total-card';
-        card.innerHTML =
-          '<div class="t-label">' + s + '단계 · 누적</div>' +
-          '<div class="t-value expected" style="color:var(--gold)">' + fmt(exp) + '</div>' +
-          '<div class="t-sub">기댓값 합계 (개)</div>' +
-          '<div class="t-value actual" style="color:var(--cyan);margin-top:10px;">' + act + '</div>' +
-          '<div class="t-sub">실제 획득 (개) · 차이 ' + (act-exp>=0?'+':'') + fmt(act-exp) + '</div>';
-        grid.appendChild(card);
+        tr.innerHTML = 
+          '<td>' + (log.createdAt || '-') + '</td>' +
+          '<td><strong style="color:var(--cyan)">' + log.stage + '단계</strong></td>' +
+          '<td>D+' + log.day + '</td>' +
+          '<td><strong style="color:var(--gold)">' + log.count + '개</strong></td>' +
+          '<td>' + exp.toFixed(4) + '개</td>' +
+          '<td><button class="btn-del" onclick="deleteLog(\'' + key + '\')">삭제</button></td>';
+        
+        tbody.appendChild(tr);
       });
 
-      var grand = document.createElement('div');
-      grand.className = 'total-card grand';
-      grand.innerHTML =
-        '<div class="t-label">전체 3개 단계 합산</div>' +
-        '<div class="t-value expected">' + fmt(grandExp) + '</div>' +
-        '<div class="t-sub">기댓값 총합계 (개)</div>' +
-        '<div class="t-value actual" style="margin-top:10px;">' + grandAct + '</div>' +
-        '<div class="t-sub">실제 총합계 (개) · 차이 ' + (grandAct-grandExp>=0?'+':'') + fmt(grandAct-grandExp) + '</div>';
-      grid.appendChild(grand);
-    }
+      // 통계 요약 갱신
+      document.getElementById('totalCount').textContent = itemCount + '회';
+      document.getElementById('totalModules').textContent = totalAct + '개';
+      document.getElementById('expectedModules').textContent = totalExp.toFixed(2) + '개';
 
-    function renderChart(series){
-      if (typeof Chart === 'undefined') return;
-      var canvas = document.getElementById('cumChart');
-      if(!canvas) return;
-      var ctx = canvas.getContext('2d');
-      var labels = [];
-      for(var d=1; d<=DAYS; d++) labels.push('D+'+d);
-
-      var colors = {7:'#37c7f0', 8:'#f0b429', 9:'#e0679a'};
-      var datasets = [];
-      STAGES.forEach(function(s){
-        datasets.push({ label: s+'단계 기대', data: series[s].exp, borderColor: colors[s], borderDash: [5,4], borderWidth: 1.5, pointRadius: 0 });
-        datasets.push({ label: s+'단계 실제', data: series[s].act, borderColor: colors[s], borderWidth: 2.5, pointRadius: 0 });
-      });
-
-      if(chartInstance){ chartInstance.destroy(); }
-      chartInstance = new Chart(ctx, {
-        type: 'line',
-        data: { labels: labels, datasets: datasets },
-        options: { responsive: true, maintainAspectRatio: false }
-      });
-    }
-
-    // 서버 안전 파싱
-    function parseServerData(val) {
-      if(!val) return;
-      STAGES.forEach(function(s){
-        var stageObj = val[s];
-        if(stageObj){
-          for(var d=0; d<DAYS; d++){
-            var dayObj = stageObj[d];
-            if(dayObj){
-              var isBurst = !!dayObj.isBurst;
-              var rawP = dayObj.p || [];
-              var pArr = [];
-              for(var i=0; i<6; i++){
-                pArr[i] = (rawP[i] !== undefined && rawP[i] !== null) ? Number(rawP[i]) : null;
-              }
-              data[s][d] = { isBurst: isBurst, p: pArr };
-            }
-          }
-        }
-      });
-    }
-
-    function listenData(){
-      dbRef.on('value', function(snapshot){
-        var val = snapshot.val();
-        if(val){
-          parseServerData(val);
-          setStatus('실시간 동기화 완료');
-        } else {
-          setStatus('연동 완료 (데이터 없음)');
-        }
-        renderInputGrid();
-        renderAnalysis();
-      }, function(err){
-        console.error(err);
-        setStatus('서버 연동 오류!');
-      });
-    }
-
-    var manualSaveBtn = document.getElementById('manualSaveBtn');
-    if(manualSaveBtn){
-      manualSaveBtn.addEventListener('click', function(){
-        saveDataToServer(true);
-      });
-    }
-
-    var resetBtn = document.getElementById('resetBtn');
-    if(resetBtn){
-      resetBtn.addEventListener('click', function(){
-        var ok = confirm('공유되는 ' + activeStage + '단계 기록을 초기화하시겠습니까?');
-        if(!ok) return;
-        for(var i=0; i<DAYS; i++){
-          data[activeStage][i] = { isBurst: false, p: [null,null,null,null,null,null] };
-        }
-        renderInputGrid();
-        renderAnalysis();
-        saveDataToServer(false);
-      });
-    }
-
-    renderProbGrid();
-    renderSuckerMeter();
-    renderTabs();
-    listenData();
+      statusEl.textContent = '실시간 동기화 완료';
+    }, function(err){
+      console.error(err);
+      statusEl.textContent = '서버 연결 오류';
+    });
 
   })();
   </script>
