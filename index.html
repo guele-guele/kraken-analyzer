@@ -29,36 +29,20 @@
       margin: 0 auto; 
     }
 
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); backdrop-filter: blur(4px); flex-wrap: wrap; gap: 12px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); backdrop-filter: blur(4px); }
     h1 { font-size: 1.5rem; color: var(--cyan); text-shadow: 0 0 10px rgba(55,199,240,0.3); }
     .header-right { display: flex; align-items: center; gap: 12px; }
     #saveStatus { font-size: 0.9rem; color: var(--gold); font-weight: bold; }
     .btn-manual-save { background: var(--cyan); color: #000; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
     .btn-manual-save:hover { opacity: 0.9; }
 
-    /* 차트 세션 관리 영역 */
-    .session-bar {
-      background: var(--card-bg);
-      backdrop-filter: blur(8px);
-      border: 1px solid var(--cyan);
-      border-radius: 8px;
-      padding: 12px 16px;
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .session-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .session-select { background: #0f172a; color: var(--cyan); border: 1px solid var(--cyan); padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 0.95rem; }
-    .btn-new-chart { background: var(--gold); color: #000; border: none; padding: 8px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-    .btn-new-chart:hover { opacity: 0.9; }
-
     .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .prob-card { background: var(--card-bg); backdrop-filter: blur(8px); padding: 16px; border-radius: 8px; border: 1px solid var(--border); }
-    .prob-card h3 { font-size: 1.1rem; margin-bottom: 12px; display: flex; justify-content: space-between; }
+    .prob-card { background: var(--card-bg); backdrop-filter: blur(8px); padding: 16px; border-radius: 8px; border: 1px solid var(--border); position: relative; }
+    .prob-card h3 { font-size: 1.1rem; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
     .stage-tag { font-size: 0.75rem; background: rgba(55,199,240,0.2); color: var(--cyan); padding: 2px 6px; border-radius: 4px; }
+    .btn-delete-stage { background: transparent; border: 1px solid var(--pink); color: var(--pink); font-size: 0.7rem; border-radius: 4px; padding: 2px 6px; cursor: pointer; }
+    .btn-delete-stage:hover { background: var(--pink); color: #fff; }
+
     .prob-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-sub); }
     .prob-row .v { color: var(--text-main); font-weight: bold; }
     .prob-row .cyan { color: var(--cyan); }
@@ -70,9 +54,10 @@
     .sucker.lit { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
     .sucker-label { font-size: 0.8rem; color: var(--text-sub); margin-left: 6px; }
 
-    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
     .tab-btn { background: var(--card-bg); backdrop-filter: blur(8px); color: var(--text-sub); border: 1px solid var(--border); padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
     .tab-btn.active { background: var(--cyan); color: #000; border-color: var(--cyan); }
+    .btn-add-stage { background: var(--gold); color: #000; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
     .table-container { background: var(--card-bg); backdrop-filter: blur(8px); border-radius: 8px; overflow-x: auto; border: 1px solid var(--border); margin-bottom: 24px; }
     table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem; }
@@ -117,19 +102,9 @@
     </div>
   </header>
 
-  <!-- 새로운 차트/세션 생성 및 전환 바 -->
-  <div class="session-bar">
-    <div class="session-controls">
-      <label for="sessionSelect" style="font-weight: bold; font-size: 0.9rem;">📊 선택된 차트 기록:</label>
-      <select id="sessionSelect" class="session-select"></select>
-    </div>
-    <div>
-      <button type="button" class="btn-new-chart" id="createNewChartBtn">➕ 새 차트 생성하기</button>
-    </div>
-  </div>
-
   <div class="grid-container" id="probGrid"></div>
   <div class="sucker-meter" id="suckerMeter"></div>
+  
   <div class="tabs" id="stageTabs"></div>
 
   <!-- 입력 테이블 -->
@@ -160,27 +135,18 @@
   <h2 style="font-size: 1.2rem; margin-bottom: 12px; color: var(--text-main); text-shadow: 0 1px 4px rgba(0,0,0,0.8);">30일 누적 분석 및 기댓값 비교</h2>
   <div class="table-container">
     <table>
-      <thead>
-        <tr>
-          <th rowspan="2">일차</th>
-          <th colspan="3">7단계</th>
-          <th colspan="3">8단계</th>
-          <th colspan="3">9단계</th>
-        </tr>
-        <tr>
-          <th>기대</th><th>실제</th><th>차이</th>
-          <th>기대</th><th>실제</th><th>차이</th>
-          <th>기대</th><th>실제</th><th>차이</th>
-        </tr>
-      </thead>
+      <thead id="analysisHeader"></thead>
       <tbody id="analysisBody"></tbody>
     </table>
   </div>
 
   <div class="totals-grid" id="totalsGrid"></div>
 
-  <div class="chart-container">
-    <canvas id="cumChart"></canvas>
+  <!-- 차트 추가가 용이한 래퍼 영역 -->
+  <div id="chartsWrapper">
+    <div class="chart-container">
+      <canvas id="cumChart"></canvas>
+    </div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -205,36 +171,41 @@
     }
     
     const database = firebase.database();
-    const dbRef = database.ref('kraken_sessions');
-    const oldDbRef = database.ref('kraken_data'); // 기존 단일 경로 참조
+    const dbRef = database.ref('shared_kraken_full_data');
 
-    var STAGES = [7,8,9];
+    // 동적 단계 관리를 위한 동적 배열 구조
+    var STAGES = [7, 8, 9];
     var BOX_RATE = {7:0.6500, 8:0.6700, 9:0.6900};
     var DIST = {1:0.700963, 2:0.289037, 3:0.010000};
     var E_PER_BOX = 1*DIST[1] + 2*DIST[2] + 3*DIST[3];
     var DAYS = 30;
 
-    function ePerPlay(s){ return BOX_RATE[s] * E_PER_BOX; }
+    function ePerPlay(s){ 
+      var rate = BOX_RATE[s] !== undefined ? BOX_RATE[s] : 0.65; // 기본 확률 지정
+      return rate * E_PER_BOX; 
+    }
     function fmt(n, d){ d = (d===undefined)?6:d; return n.toLocaleString('ko-KR', {minimumFractionDigits:d, maximumFractionDigits:d}); }
     function pct(n, d){ d = (d===undefined)?4:d; return (n*100).toFixed(d) + '%'; }
 
     var activeStage = 7;
-    var currentSessionId = "default_chart";
-    var sessions = {};
-
-    function createEmptyStageData() {
-      var stageData = {};
-      STAGES.forEach(function(s){
-        stageData[s] = [];
+    var data = {};
+    
+    function initStageData(s) {
+      if(!data[s]) {
+        data[s] = [];
         for(var i=0; i<DAYS; i++){
-          stageData[s].push({
+          data[s].push({
             isBurst: false,
             p: [null, null, null, null, null, null]
           });
         }
-      });
-      return stageData;
+      }
     }
+
+    function initEmptyData() {
+      STAGES.forEach(function(s){ initStageData(s); });
+    }
+    initEmptyData();
 
     function setStatus(text){
       var el = document.getElementById('saveStatus');
@@ -243,7 +214,7 @@
 
     function saveDataToServer(isManual){
       setStatus('저장 중…');
-      dbRef.child(currentSessionId).child('data').set(sessions[currentSessionId].data)
+      dbRef.set({ stages: STAGES, boxRates: BOX_RATE, data: data })
         .then(function(){
           var t = new Date();
           var timeStr = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
@@ -256,30 +227,19 @@
         });
     }
 
-    function renderSessionSelect(){
-      var sel = document.getElementById('sessionSelect');
-      if(!sel) return;
-      sel.innerHTML = '';
-      
-      Object.keys(sessions).forEach(function(id){
-        var opt = document.createElement('option');
-        opt.value = id;
-        opt.textContent = sessions[id].name || id;
-        if(id === currentSessionId) opt.selected = true;
-        sel.appendChild(opt);
-      });
-    }
-
     function renderProbGrid(){
       var grid = document.getElementById('probGrid');
       if(!grid) return;
       grid.innerHTML = '';
       STAGES.forEach(function(s){
+        var rate = BOX_RATE[s] !== undefined ? BOX_RATE[s] : 0.65;
         var card = document.createElement('div');
         card.className = 'prob-card';
         card.innerHTML =
-          '<h3>' + s + '단계 <span class="stage-tag">STAGE ' + s + '</span></h3>' +
-          '<div class="prob-row"><span class="k">상자 획득 확률</span><span class="v cyan">' + pct(BOX_RATE[s]) + '</span></div>' +
+          '<h3>' + s + '단계 <span class="stage-tag">STAGE ' + s + '</span>' +
+          (STAGES.length > 1 ? '<button class="btn-delete-stage" data-stage="' + s + '">삭제</button>' : '') +
+          '</h3>' +
+          '<div class="prob-row"><span class="k">상자 획득 확률</span><span class="v cyan">' + pct(rate) + '</span></div>' +
           '<div class="prob-row"><span class="k">모듈 1개 획득</span><span class="v">' + pct(DIST[1]) + '</span></div>' +
           '<div class="prob-row"><span class="k">모듈 2개 획득</span><span class="v">' + pct(DIST[2]) + '</span></div>' +
           '<div class="prob-row"><span class="k">모듈 3개 획득</span><span class="v">' + pct(DIST[3]) + '</span></div>' +
@@ -288,6 +248,22 @@
           '<div class="expect-line"><span class="lbl">풀버스트(6회) 기댓값</span><span class="num" style="color:var(--pink)">' + fmt(ePerPlay(s)*6) + '개</span></div>';
         grid.appendChild(card);
       });
+
+      // 삭제 버튼 이벤트 바인딩
+      var delBtns = grid.querySelectorAll('.btn-delete-stage');
+      delBtns.forEach(function(btn){
+        btn.addEventListener('click', function(e){
+          var stg = parseInt(e.target.getAttribute('data-stage'), 10);
+          if(confirm(stg + '단계를 삭제하시겠습니까?')) {
+            STAGES = STAGES.filter(function(x){ return x !== stg; });
+            delete data[stg];
+            delete BOX_RATE[stg];
+            if(activeStage === stg) activeStage = STAGES[0];
+            renderAll();
+            saveDataToServer(false);
+          }
+        });
+      });
     }
 
     function renderSuckerMeter(){
@@ -295,7 +271,7 @@
       if(!wrap) return;
       wrap.innerHTML = '';
       STAGES.forEach(function(s){
-        var rate = BOX_RATE[s];
+        var rate = BOX_RATE[s] !== undefined ? BOX_RATE[s] : 0.65;
         var lit = Math.round(rate*10);
         var row = document.createElement('div');
         row.style.display='flex'; row.style.alignItems='center'; row.style.marginRight='18px';
@@ -323,12 +299,34 @@
         });
         tabs.appendChild(btn);
       });
+
+      // 유저가 직접 새 단계를 추가할 수 있는 버튼
+      var addBtn = document.createElement('button');
+      addBtn.className = 'btn-add-stage';
+      addBtn.type = 'button';
+      addBtn.textContent = '+ 새 단계 추가';
+      addBtn.addEventListener('click', function(){
+        var newStage = prompt('추가할 단계 번호를 입력하세요 (예: 10):');
+        if(newStage) {
+          var num = parseInt(newStage, 10);
+          if(!isNaN(num) && STAGES.indexOf(num) === -1) {
+            STAGES.push(num);
+            STAGES.sort(function(a,b){ return a-b; });
+            BOX_RATE[num] = 0.70; // 기본 확률값 할당
+            initStageData(num);
+            activeStage = num;
+            renderAll();
+            saveDataToServer(false);
+          } else {
+            alert('올바르지 않거나 이미 존재하는 단계입니다.');
+          }
+        }
+      });
+      tabs.appendChild(addBtn);
     }
 
     function dayActualSum(stage, dayIdx){
-      var currentData = sessions[currentSessionId]?.data;
-      if(!currentData) return 0;
-      var dayObj = currentData[stage][dayIdx];
+      var dayObj = data[stage] ? data[stage][dayIdx] : null;
       if(!dayObj) return 0;
       var sum = 0;
       var maxPlays = dayObj.isBurst ? 6 : 3;
@@ -341,8 +339,7 @@
     }
 
     function dayExpectedSum(stage, dayIdx){
-      var currentData = sessions[currentSessionId]?.data;
-      var dayObj = currentData ? currentData[stage][dayIdx] : null;
+      var dayObj = data[stage] ? data[stage][dayIdx] : null;
       var plays = (dayObj && dayObj.isBurst) ? 6 : 3;
       return ePerPlay(stage) * plays;
     }
@@ -353,11 +350,8 @@
       body.innerHTML = '';
       var cum = 0;
 
-      var currentData = sessions[currentSessionId]?.data;
-      if(!currentData) return;
-
       for(var d=0; d<DAYS; d++){
-        var dayData = currentData[activeStage][d] || { isBurst: false, p: [null,null,null,null,null,null] };
+        var dayData = (data[activeStage] && data[activeStage][d]) ? data[activeStage][d] : { isBurst: false, p: [null,null,null,null,null,null] };
         var daySum = dayActualSum(activeStage, d);
         cum += daySum;
 
@@ -376,11 +370,11 @@
 
         (function(dayIdx, checkboxEl){
           checkboxEl.addEventListener('change', function(){
-            currentData[activeStage][dayIdx].isBurst = checkboxEl.checked;
+            data[activeStage][dayIdx].isBurst = checkboxEl.checked;
             if(!checkboxEl.checked){
-              currentData[activeStage][dayIdx].p[3] = null;
-              currentData[activeStage][dayIdx].p[4] = null;
-              currentData[activeStage][dayIdx].p[5] = null;
+              data[activeStage][dayIdx].p[3] = null;
+              data[activeStage][dayIdx].p[4] = null;
+              data[activeStage][dayIdx].p[5] = null;
             }
             renderInputGrid();
             renderAnalysis();
@@ -410,7 +404,7 @@
           (function(dayIdx, playIdx, selectEl){
             selectEl.addEventListener('change', function(){
               var v = selectEl.value;
-              currentData[activeStage][dayIdx].p[playIdx] = (v === '') ? null : parseInt(v, 10);
+              data[activeStage][dayIdx].p[playIdx] = (v === '') ? null : parseInt(v, 10);
               renderInputGrid();
               renderAnalysis();
               saveDataToServer(false);
@@ -435,7 +429,6 @@
       }
     }
 
-    var chartInstance = null;
     function cumulativeArrays(stage){
       var expArr = [], actArr = [];
       var ce = 0, ca = 0;
@@ -449,8 +442,21 @@
     }
 
     function renderAnalysis(){
+      var head = document.getElementById('analysisHeader');
       var body = document.getElementById('analysisBody');
-      if(!body) return;
+      if(!head || !body) return;
+
+      // 동적 테이블 헤더 생성
+      var tr1 = '<tr><th rowspan="2">일차</th>';
+      var tr2 = '<tr>';
+      STAGES.forEach(function(s){
+        tr1 += '<th colspan="3">' + s + '단계</th>';
+        tr2 += '<th>기대</th><th>실제</th><th>차이</th>';
+      });
+      tr1 += '</tr>';
+      tr2 += '</tr>';
+      head.innerHTML = tr1 + tr2;
+
       body.innerHTML = '';
       var series = {};
       STAGES.forEach(function(s){ series[s] = cumulativeArrays(s); });
@@ -477,7 +483,7 @@
       }
 
       renderTotals(series);
-      renderChart(series);
+      renderCharts(series);
     }
 
     function renderTotals(series){
@@ -505,7 +511,7 @@
       var grand = document.createElement('div');
       grand.className = 'total-card grand';
       grand.innerHTML =
-        '<div class="t-label">전체 3개 단계 합산</div>' +
+        '<div class="t-label">전체 단계 합산</div>' +
         '<div class="t-value expected">' + fmt(grandExp) + '</div>' +
         '<div class="t-sub">기댓값 총합계 (개)</div>' +
         '<div class="t-value actual" style="margin-top:10px;">' + grandAct + '</div>' +
@@ -513,95 +519,91 @@
       grid.appendChild(grand);
     }
 
-    function renderChart(series){
+    var chartInstances = {};
+
+    function renderCharts(series){
       if (typeof Chart === 'undefined') return;
-      var canvas = document.getElementById('cumChart');
-      if(!canvas) return;
-      var ctx = canvas.getContext('2d');
+
       var labels = [];
       for(var d=1; d<=DAYS; d++) labels.push('D+'+d);
+      var defaultColors = ['#37c7f0', '#f0b429', '#e0679a', '#a855f7', '#22c55e', '#f97316'];
 
-      var colors = {7:'#37c7f0', 8:'#f0b429', 9:'#e0679a'};
-      var datasets = [];
+      var canvas1 = document.getElementById('cumChart');
+      if(canvas1){
+        var ctx1 = canvas1.getContext('2d');
+        var datasets1 = [];
+        STAGES.forEach(function(s, idx){
+          var color = defaultColors[idx % defaultColors.length];
+          datasets1.push({ label: s+'단계 기대', data: series[s].exp, borderColor: color, borderDash: [5,4], borderWidth: 1.5, pointRadius: 0 });
+          datasets1.push({ label: s+'단계 실제', data: series[s].act, borderColor: color, borderWidth: 2.5, pointRadius: 0 });
+        });
+
+        if(chartInstances['cumChart']){ chartInstances['cumChart'].destroy(); }
+        chartInstances['cumChart'] = new Chart(ctx1, {
+          type: 'line',
+          data: { labels: labels, datasets: datasets1 },
+          options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#f8fafc' } } },
+            scales: {
+              x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51, 65, 85, 0.5)' } },
+              y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51, 65, 85, 0.5)' } }
+            }
+          }
+        });
+      }
+    }
+
+    function parseServerData(val) {
+      if(!val) return;
+      if(val.stages) STAGES = val.stages;
+      if(val.boxRates) BOX_RATE = val.boxRates;
+      var rawData = val.data || val;
+
       STAGES.forEach(function(s){
-        datasets.push({ label: s+'단계 기대', data: series[s].exp, borderColor: colors[s], borderDash: [5,4], borderWidth: 1.5, pointRadius: 0 });
-        datasets.push({ label: s+'단계 실제', data: series[s].act, borderColor: colors[s], borderWidth: 2.5, pointRadius: 0 });
-      });
-
-      if(chartInstance){ chartInstance.destroy(); }
-      chartInstance = new Chart(ctx, {
-        type: 'line',
-        data: { labels: labels, datasets: datasets },
-        options: { 
-          responsive: true, 
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { labels: { color: '#f8fafc' } }
-          },
-          scales: {
-            x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51, 65, 85, 0.5)' } },
-            y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51, 65, 85, 0.5)' } }
+        initStageData(s);
+        var stageObj = rawData[s];
+        if(stageObj){
+          for(var d=0; d<DAYS; d++){
+            var dayObj = stageObj[d];
+            if(dayObj){
+              var isBurst = !!dayObj.isBurst;
+              var rawP = dayObj.p || [];
+              var pArr = [];
+              for(var i=0; i<6; i++){
+                pArr[i] = (rawP[i] !== undefined && rawP[i] !== null) ? Number(rawP[i]) : null;
+              }
+              data[s][d] = { isBurst: isBurst, p: pArr };
+            }
           }
         }
       });
     }
 
-    function listenData(){
-      // 기존 저장된 데이터(kraken_data) 마이그레이션 확인
-      oldDbRef.once('value').then(function(oldSnap){
-        var oldVal = oldSnap.val();
-
-        dbRef.on('value', function(snapshot){
-          var val = snapshot.val();
-          if(val){
-            sessions = val;
-            if(!sessions[currentSessionId]){
-              currentSessionId = Object.keys(sessions)[0];
-            }
-          } else {
-            // 새 경로 데이터가 없을 때 기존 경로의 데이터를 가져와 기본 차트에 복원
-            currentSessionId = "default_chart";
-            sessions = {};
-            sessions[currentSessionId] = {
-              name: "기본 차트 (기존 기록)",
-              data: oldVal ? oldVal : createEmptyStageData()
-            };
-            dbRef.child(currentSessionId).set(sessions[currentSessionId]);
-          }
-          setStatus('실시간 동기화 완료');
-          renderSessionSelect();
-          renderInputGrid();
-          renderAnalysis();
-        }, function(err){
-          console.error(err);
-          setStatus('서버 연동 오류!');
-        });
-      });
-    }
-
-    // 새 차트 세션 생성 이벤트
-    document.getElementById('createNewChartBtn')?.addEventListener('click', function(){
-      var userName = prompt('작성자 이름이나 차트 이름을 입력하세요:', '유저 ' + (Object.keys(sessions).length + 1));
-      if(!userName) return;
-
-      var newId = 'session_' + Date.now();
-      var newSession = {
-        name: userName + '의 차트',
-        data: createEmptyStageData()
-      };
-
-      dbRef.child(newId).set(newSession).then(function(){
-        currentSessionId = newId;
-        alert('새 차트가 생성되었습니다!');
-      });
-    });
-
-    // 차트 선택 변경 이벤트
-    document.getElementById('sessionSelect')?.addEventListener('change', function(e){
-      currentSessionId = e.target.value;
+    function renderAll() {
+      renderProbGrid();
+      renderSuckerMeter();
+      renderTabs();
       renderInputGrid();
       renderAnalysis();
-    });
+    }
+
+    function listenData(){
+      dbRef.on('value', function(snapshot){
+        var val = snapshot.val();
+        if(val){
+          parseServerData(val);
+          setStatus('실시간 동기화 완료');
+        } else {
+          setStatus('연동 완료 (데이터 없음)');
+        }
+        renderAll();
+      }, function(err){
+        console.error(err);
+        setStatus('서버 연동 오류!');
+      });
+    }
 
     var manualSaveBtn = document.getElementById('manualSaveBtn');
     if(manualSaveBtn){
@@ -613,11 +615,10 @@
     var resetBtn = document.getElementById('resetBtn');
     if(resetBtn){
       resetBtn.addEventListener('click', function(){
-        var ok = confirm('현재 선택된 차트(' + sessions[currentSessionId].name + ')의 ' + activeStage + '단계 기록을 초기화하시겠습니까?');
+        var ok = confirm('공유되는 ' + activeStage + '단계 기록을 초기화하시겠습니까?');
         if(!ok) return;
-        var currentData = sessions[currentSessionId].data;
         for(var i=0; i<DAYS; i++){
-          currentData[activeStage][i] = { isBurst: false, p: [null,null,null,null,null,null] };
+          data[activeStage][i] = { isBurst: false, p: [null,null,null,null,null,null] };
         }
         renderInputGrid();
         renderAnalysis();
@@ -625,9 +626,7 @@
       });
     }
 
-    renderProbGrid();
-    renderSuckerMeter();
-    renderTabs();
+    renderAll();
     listenData();
 
   })();
