@@ -8,7 +8,7 @@
   <style>
     :root {
       --bg-color: #0f172a;
-      --card-bg: rgba(30, 41, 59, 0.85); /* 시독성을 위한 반투명 배경 */
+      --card-bg: rgba(30, 41, 59, 0.85);
       --card-bg-solid: #1e293b;
       --text-main: #f8fafc;
       --text-sub: #94a3b8;
@@ -20,7 +20,6 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     
-    /* 크라켄 이미지 배경 설정 */
     body { 
       background: linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.85)), url('kraken.jpg') no-repeat center center fixed;
       background-size: cover;
@@ -30,12 +29,31 @@
       margin: 0 auto; 
     }
 
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); backdrop-filter: blur(4px); }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); backdrop-filter: blur(4px); flex-wrap: wrap; gap: 12px; }
     h1 { font-size: 1.5rem; color: var(--cyan); text-shadow: 0 0 10px rgba(55,199,240,0.3); }
     .header-right { display: flex; align-items: center; gap: 12px; }
     #saveStatus { font-size: 0.9rem; color: var(--gold); font-weight: bold; }
     .btn-manual-save { background: var(--cyan); color: #000; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
     .btn-manual-save:hover { opacity: 0.9; }
+
+    /* 차트 세션 관리 영역 */
+    .session-bar {
+      background: var(--card-bg);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--cyan);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .session-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .session-select { background: #0f172a; color: var(--cyan); border: 1px solid var(--cyan); padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 0.95rem; }
+    .btn-new-chart { background: var(--gold); color: #000; border: none; padding: 8px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    .btn-new-chart:hover { opacity: 0.9; }
 
     .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
     .prob-card { background: var(--card-bg); backdrop-filter: blur(8px); padding: 16px; border-radius: 8px; border: 1px solid var(--border); }
@@ -98,6 +116,17 @@
       <button type="button" class="btn-manual-save" id="manualSaveBtn">💾 기록 저장하기</button>
     </div>
   </header>
+
+  <!-- 새로운 차트/세션 생성 및 전환 바 -->
+  <div class="session-bar">
+    <div class="session-controls">
+      <label for="sessionSelect" style="font-weight: bold; font-size: 0.9rem;">📊 선택된 차트 기록:</label>
+      <select id="sessionSelect" class="session-select"></select>
+    </div>
+    <div>
+      <button type="button" class="btn-new-chart" id="createNewChartBtn">➕ 새 차트 생성하기</button>
+    </div>
+  </div>
 
   <div class="grid-container" id="probGrid"></div>
   <div class="sucker-meter" id="suckerMeter"></div>
@@ -176,7 +205,7 @@
     }
     
     const database = firebase.database();
-    const dbRef = database.ref('shared_kraken_full_data');
+    const dbRef = database.ref('kraken_sessions');
 
     var STAGES = [7,8,9];
     var BOX_RATE = {7:0.6500, 8:0.6700, 9:0.6900};
@@ -189,20 +218,22 @@
     function pct(n, d){ d = (d===undefined)?4:d; return (n*100).toFixed(d) + '%'; }
 
     var activeStage = 7;
-    var data = {};
-    
-    function initEmptyData() {
+    var currentSessionId = "default_chart";
+    var sessions = {};
+
+    function createEmptyStageData() {
+      var stageData = {};
       STAGES.forEach(function(s){
-        data[s] = [];
+        stageData[s] = [];
         for(var i=0; i<DAYS; i++){
-          data[s].push({
+          stageData[s].push({
             isBurst: false,
             p: [null, null, null, null, null, null]
           });
         }
       });
+      return stageData;
     }
-    initEmptyData();
 
     function setStatus(text){
       var el = document.getElementById('saveStatus');
@@ -211,7 +242,7 @@
 
     function saveDataToServer(isManual){
       setStatus('저장 중…');
-      dbRef.set(data)
+      dbRef.child(currentSessionId).child('data').set(sessions[currentSessionId].data)
         .then(function(){
           var t = new Date();
           var timeStr = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
@@ -222,6 +253,20 @@
           console.error(err);
           setStatus('저장 실패!');
         });
+    }
+
+    function renderSessionSelect(){
+      var sel = document.getElementById('sessionSelect');
+      if(!sel) return;
+      sel.innerHTML = '';
+      
+      Object.keys(sessions).forEach(function(id){
+        var opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = sessions[id].name || id;
+        if(id === currentSessionId) opt.selected = true;
+        sel.appendChild(opt);
+      });
     }
 
     function renderProbGrid(){
@@ -280,7 +325,9 @@
     }
 
     function dayActualSum(stage, dayIdx){
-      var dayObj = data[stage][dayIdx];
+      var currentData = sessions[currentSessionId]?.data;
+      if(!currentData) return 0;
+      var dayObj = currentData[stage][dayIdx];
       if(!dayObj) return 0;
       var sum = 0;
       var maxPlays = dayObj.isBurst ? 6 : 3;
@@ -293,7 +340,8 @@
     }
 
     function dayExpectedSum(stage, dayIdx){
-      var dayObj = data[stage][dayIdx];
+      var currentData = sessions[currentSessionId]?.data;
+      var dayObj = currentData ? currentData[stage][dayIdx] : null;
       var plays = (dayObj && dayObj.isBurst) ? 6 : 3;
       return ePerPlay(stage) * plays;
     }
@@ -304,8 +352,11 @@
       body.innerHTML = '';
       var cum = 0;
 
+      var currentData = sessions[currentSessionId]?.data;
+      if(!currentData) return;
+
       for(var d=0; d<DAYS; d++){
-        var dayData = data[activeStage][d] || { isBurst: false, p: [null,null,null,null,null,null] };
+        var dayData = currentData[activeStage][d] || { isBurst: false, p: [null,null,null,null,null,null] };
         var daySum = dayActualSum(activeStage, d);
         cum += daySum;
 
@@ -324,11 +375,11 @@
 
         (function(dayIdx, checkboxEl){
           checkboxEl.addEventListener('change', function(){
-            data[activeStage][dayIdx].isBurst = checkboxEl.checked;
+            currentData[activeStage][dayIdx].isBurst = checkboxEl.checked;
             if(!checkboxEl.checked){
-              data[activeStage][dayIdx].p[3] = null;
-              data[activeStage][dayIdx].p[4] = null;
-              data[activeStage][dayIdx].p[5] = null;
+              currentData[activeStage][dayIdx].p[3] = null;
+              currentData[activeStage][dayIdx].p[4] = null;
+              currentData[activeStage][dayIdx].p[5] = null;
             }
             renderInputGrid();
             renderAnalysis();
@@ -358,7 +409,7 @@
           (function(dayIdx, playIdx, selectEl){
             selectEl.addEventListener('change', function(){
               var v = selectEl.value;
-              data[activeStage][dayIdx].p[playIdx] = (v === '') ? null : parseInt(v, 10);
+              currentData[activeStage][dayIdx].p[playIdx] = (v === '') ? null : parseInt(v, 10);
               renderInputGrid();
               renderAnalysis();
               saveDataToServer(false);
@@ -484,9 +535,7 @@
           responsive: true, 
           maintainAspectRatio: false,
           plugins: {
-            legend: {
-              labels: { color: '#f8fafc' }
-            }
+            legend: { labels: { color: '#f8fafc' } }
           },
           scales: {
             x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51, 65, 85, 0.5)' } },
@@ -496,36 +545,26 @@
       });
     }
 
-    function parseServerData(val) {
-      if(!val) return;
-      STAGES.forEach(function(s){
-        var stageObj = val[s];
-        if(stageObj){
-          for(var d=0; d<DAYS; d++){
-            var dayObj = stageObj[d];
-            if(dayObj){
-              var isBurst = !!dayObj.isBurst;
-              var rawP = dayObj.p || [];
-              var pArr = [];
-              for(var i=0; i<6; i++){
-                pArr[i] = (rawP[i] !== undefined && rawP[i] !== null) ? Number(rawP[i]) : null;
-              }
-              data[s][d] = { isBurst: isBurst, p: pArr };
-            }
-          }
-        }
-      });
-    }
-
     function listenData(){
       dbRef.on('value', function(snapshot){
         var val = snapshot.val();
         if(val){
-          parseServerData(val);
+          sessions = val;
+          if(!sessions[currentSessionId]){
+            currentSessionId = Object.keys(sessions)[0];
+          }
           setStatus('실시간 동기화 완료');
         } else {
-          setStatus('연동 완료 (데이터 없음)');
+          currentSessionId = "default_chart";
+          sessions = {};
+          sessions[currentSessionId] = {
+            name: "기본 차트",
+            data: createEmptyStageData()
+          };
+          dbRef.child(currentSessionId).set(sessions[currentSessionId]);
+          setStatus('연동 완료 (기본 차트 생성)');
         }
+        renderSessionSelect();
         renderInputGrid();
         renderAnalysis();
       }, function(err){
@@ -533,6 +572,30 @@
         setStatus('서버 연동 오류!');
       });
     }
+
+    // 새 차트 세션 생성 이벤트
+    document.getElementById('createNewChartBtn')?.addEventListener('click', function(){
+      var userName = prompt('작성자 이름이나 차트 이름을 입력하세요:', '유저 ' + (Object.keys(sessions).length + 1));
+      if(!userName) return;
+
+      var newId = 'session_' + Date.now();
+      var newSession = {
+        name: userName + '의 차트',
+        data: createEmptyStageData()
+      };
+
+      dbRef.child(newId).set(newSession).then(function(){
+        currentSessionId = newId;
+        alert('새 차트가 생성되었습니다!');
+      });
+    });
+
+    // 차트 선택 변경 이벤트
+    document.getElementById('sessionSelect')?.addEventListener('change', function(e){
+      currentSessionId = e.target.value;
+      renderInputGrid();
+      renderAnalysis();
+    });
 
     var manualSaveBtn = document.getElementById('manualSaveBtn');
     if(manualSaveBtn){
@@ -544,10 +607,11 @@
     var resetBtn = document.getElementById('resetBtn');
     if(resetBtn){
       resetBtn.addEventListener('click', function(){
-        var ok = confirm('공유되는 ' + activeStage + '단계 기록을 초기화하시겠습니까?');
+        var ok = confirm('현재 선택된 차트(' + sessions[currentSessionId].name + ')의 ' + activeStage + '단계 기록을 초기화하시겠습니까?');
         if(!ok) return;
+        var currentData = sessions[currentSessionId].data;
         for(var i=0; i<DAYS; i++){
-          data[activeStage][i] = { isBurst: false, p: [null,null,null,null,null,null] };
+          currentData[activeStage][i] = { isBurst: false, p: [null,null,null,null,null,null] };
         }
         renderInputGrid();
         renderAnalysis();
