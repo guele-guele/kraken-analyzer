@@ -181,7 +181,7 @@
       6: 0.6300, 7: 0.6500, 8: 0.6700, 9: 0.6900
     };
 
-    // 기존 데이터 호환을 위한 단계 리스트 (ID와 레벨 보유)
+    // 기본 7, 8, 9 단계 목록 (기존 DB 구조와 완벽 호환)
     var items = [
       { id: '7', level: 7 },
       { id: '8', level: 8 },
@@ -199,6 +199,7 @@
 
     var activeId = '7';
     var data = {};
+    var isDataLoaded = false; // 데이터 로드 전 저장되는 것을 방지하는 안전장치
 
     function initItemData(id) {
       if(!data[id]) {
@@ -220,17 +221,26 @@
     }
 
     function saveDataToServer(isManual){
+      if(!isDataLoaded && !isManual) return; // 데이터 불러오기 전에 자동저장 방지
+
       setStatus('저장 중…');
-      // 기존 구조(stages, boxRates) 및 신규 구조(items)를 모두 저장하여 상호 호환성 확보
       var stagesArr = items.map(function(x){ return x.level; });
       var boxRatesObj = {};
       items.forEach(function(x){ boxRatesObj[x.level] = getRate(x.level); });
+
+      // 기존 데이터 키("7", "8", "9")와 새로운 키 호환성을 유지하여 저장
+      var dataToSave = {};
+      items.forEach(function(item){
+        dataToSave[item.id] = data[item.id];
+        // 기존 백엔드 지원을 위해 숫자 Key도 함께 복사
+        dataToSave[item.level] = data[item.id];
+      });
 
       dbRef.set({ 
         stages: stagesArr, 
         boxRates: boxRatesObj, 
         items: items, 
-        data: data 
+        data: dataToSave 
       })
       .then(function(){
         var t = new Date();
@@ -248,7 +258,7 @@
       var grid = document.getElementById('probGrid');
       if(!grid) return;
       grid.innerHTML = '';
-      items.forEach(function(item, idx){
+      items.forEach(function(item){
         var id = item.id;
         var lvl = item.level;
         var card = document.createElement('div');
@@ -318,7 +328,6 @@
         tabs.appendChild(btn);
       });
 
-      // 1~9단계 선택 드롭다운 + 추가 버튼
       var addWrap = document.createElement('div');
       addWrap.className = 'add-stage-wrap';
 
@@ -581,11 +590,11 @@
       }
     }
 
+    // 서버의 기존/신규 데이터를 복원하는 완벽 하위호환 파서
     function parseServerData(val) {
       if(!val) return;
 
-      // 신규 items 구조 또는 기존 stages 구조에서 항목 리스트 복원
-      if (val.items) {
+      if (val.items && Array.isArray(val.items) && val.items.length > 0) {
         items = val.items;
       } else if (val.stages && Array.isArray(val.stages)) {
         items = val.stages.map(function(s){
@@ -597,8 +606,8 @@
 
       items.forEach(function(item){
         initItemData(item.id);
-        // 기존 숫자 key(7, 8, 9) 또는 신규 string ID key 조회
-        var itemObj = rawData[item.id] || rawData[item.level];
+        // 숫자 key(7, 8, 9)와 문자열 key 모두 조회하여 복원
+        var itemObj = rawData[item.id] || rawData[item.level] || rawData[String(item.level)];
         if(itemObj){
           for(var d=0; d<DAYS; d++){
             var dayObj = itemObj[d];
@@ -614,6 +623,7 @@
           }
         }
       });
+      isDataLoaded = true;
     }
 
     function renderAll() {
@@ -631,6 +641,7 @@
           parseServerData(val);
           setStatus('실시간 동기화 완료');
         } else {
+          isDataLoaded = true;
           setStatus('연동 완료 (데이터 없음)');
         }
         renderAll();
