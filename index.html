@@ -175,17 +175,17 @@
     const database = firebase.database();
     const dbRef = database.ref('shared_kraken_full_data');
 
-    // 1~9단계별 상자 획득 확률표 정의
+    // 1~9단계 기본 확률 데이터
     var BASE_RATES = {
       1: 0.5300, 2: 0.5500, 3: 0.5700, 4: 0.5900, 5: 0.6100,
       6: 0.6300, 7: 0.6500, 8: 0.6700, 9: 0.6900
     };
 
-    // 항목 리스트 (중복 허용을 위해 각 항목에 unique id와 level 저장)
+    // 기존 데이터 호환을 위한 단계 리스트 (ID와 레벨 보유)
     var items = [
-      { id: 'item_1', level: 7 },
-      { id: 'item_2', level: 8 },
-      { id: 'item_3', level: 9 }
+      { id: '7', level: 7 },
+      { id: '8', level: 8 },
+      { id: '9', level: 9 }
     ];
 
     var DIST = {1:0.700963, 2:0.289037, 3:0.010000};
@@ -197,7 +197,7 @@
     function fmt(n, d){ d = (d===undefined)?6:d; return n.toLocaleString('ko-KR', {minimumFractionDigits:d, maximumFractionDigits:d}); }
     function pct(n, d){ d = (d===undefined)?4:d; return (n*100).toFixed(d) + '%'; }
 
-    var activeId = 'item_1';
+    var activeId = '7';
     var data = {};
 
     function initItemData(id) {
@@ -221,17 +221,27 @@
 
     function saveDataToServer(isManual){
       setStatus('저장 중…');
-      dbRef.set({ items: items, data: data })
-        .then(function(){
-          var t = new Date();
-          var timeStr = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
-          setStatus('저장완료 (' + timeStr + ')');
-          if(isManual){ alert('서버에 정상적으로 저장되었습니다!'); }
-        })
-        .catch(function(err){
-          console.error(err);
-          setStatus('저장 실패!');
-        });
+      // 기존 구조(stages, boxRates) 및 신규 구조(items)를 모두 저장하여 상호 호환성 확보
+      var stagesArr = items.map(function(x){ return x.level; });
+      var boxRatesObj = {};
+      items.forEach(function(x){ boxRatesObj[x.level] = getRate(x.level); });
+
+      dbRef.set({ 
+        stages: stagesArr, 
+        boxRates: boxRatesObj, 
+        items: items, 
+        data: data 
+      })
+      .then(function(){
+        var t = new Date();
+        var timeStr = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+        setStatus('저장완료 (' + timeStr + ')');
+        if(isManual){ alert('서버에 정상적으로 저장되었습니다!'); }
+      })
+      .catch(function(err){
+        console.error(err);
+        setStatus('저장 실패!');
+      });
     }
 
     function renderProbGrid(){
@@ -244,7 +254,7 @@
         var card = document.createElement('div');
         card.className = 'prob-card';
         card.innerHTML =
-          '<h3>#' + (idx+1) + ' (' + lvl + '단계)' +
+          '<h3>' + lvl + '단계 <span class="stage-tag">STAGE ' + lvl + '</span>' +
           (items.length > 1 ? '<button class="btn-delete-stage" data-id="' + id + '">삭제</button>' : '') +
           '</h3>' +
           '<div class="prob-row"><span class="k">상자 획득 확률</span><span class="v cyan">' + pct(getRate(lvl)) + '</span></div>' +
@@ -276,14 +286,14 @@
       var wrap = document.getElementById('suckerMeter');
       if(!wrap) return;
       wrap.innerHTML = '';
-      items.forEach(function(item, idx){
+      items.forEach(function(item){
         var lvl = item.level;
         var lit = Math.round(getRate(lvl)*10);
         var row = document.createElement('div');
         row.style.display='flex'; row.style.alignItems='center'; row.style.marginRight='18px';
         var dots='';
         for(var i=0;i<10;i++){ dots += '<span class="sucker' + (i<lit?' lit':'') + '"></span>'; }
-        row.innerHTML = dots + '<span class="sucker-label">#' + (idx+1) + ' (' + lvl + '단계 ' + pct(getRate(lvl)) + ')</span>';
+        row.innerHTML = dots + '<span class="sucker-label">' + lvl + '단계 ' + pct(getRate(lvl)) + '</span>';
         row.style.gap='4px';
         wrap.appendChild(row);
       });
@@ -293,13 +303,13 @@
       var tabs = document.getElementById('stageTabs');
       if(!tabs) return;
       tabs.innerHTML = '';
-      items.forEach(function(item, idx){
+      items.forEach(function(item){
         var id = item.id;
         var lvl = item.level;
         var btn = document.createElement('button');
         btn.className = 'tab-btn' + (id===activeId?' active':'');
         btn.type = 'button';
-        btn.textContent = '#' + (idx+1) + ' (' + lvl + '단계)';
+        btn.textContent = lvl + '단계 입력';
         btn.addEventListener('click', function(){
           activeId = id;
           renderTabs();
@@ -328,7 +338,7 @@
       addBtn.textContent = '+ 항목 추가';
       addBtn.addEventListener('click', function(){
         var chosenLevel = parseInt(select.value, 10);
-        var newId = 'item_' + Date.now();
+        var newId = 'stage_' + chosenLevel + '_' + Date.now();
         items.push({ id: newId, level: chosenLevel });
         initItemData(newId);
         activeId = newId;
@@ -464,8 +474,8 @@
 
       var tr1 = '<tr><th rowspan="2">일차</th>';
       var tr2 = '<tr>';
-      items.forEach(function(item, idx){
-        tr1 += '<th colspan="3">#' + (idx+1) + ' (' + item.level + '단계)</th>';
+      items.forEach(function(item){
+        tr1 += '<th colspan="3">' + item.level + '단계</th>';
         tr2 += '<th>기대</th><th>실제</th><th>차이</th>';
       });
       tr1 += '</tr>';
@@ -507,7 +517,7 @@
       grid.innerHTML = '';
       var grandExp = 0, grandAct = 0;
 
-      items.forEach(function(item, idx){
+      items.forEach(function(item){
         var exp = series[item.id].exp[DAYS-1];
         var act = series[item.id].act[DAYS-1];
         grandExp += exp; grandAct += act;
@@ -515,7 +525,7 @@
         var card = document.createElement('div');
         card.className = 'total-card';
         card.innerHTML =
-          '<div class="t-label">#' + (idx+1) + ' (' + item.level + '단계) 누적</div>' +
+          '<div class="t-label">' + item.level + '단계 · 누적</div>' +
           '<div class="t-value expected" style="color:var(--gold)">' + fmt(exp) + '</div>' +
           '<div class="t-sub">기댓값 합계 (개)</div>' +
           '<div class="t-value actual" style="color:var(--cyan);margin-top:10px;">' + act + '</div>' +
@@ -526,7 +536,7 @@
       var grand = document.createElement('div');
       grand.className = 'total-card grand';
       grand.innerHTML =
-        '<div class="t-label">전체 총합계</div>' +
+        '<div class="t-label">전체 단계 합산</div>' +
         '<div class="t-value expected">' + fmt(grandExp) + '</div>' +
         '<div class="t-sub">기댓값 총합계 (개)</div>' +
         '<div class="t-value actual" style="margin-top:10px;">' + grandAct + '</div>' +
@@ -549,7 +559,7 @@
         var datasets1 = [];
         items.forEach(function(item, idx){
           var color = defaultColors[idx % defaultColors.length];
-          var title = '#' + (idx+1) + ' (' + item.level + '단계)';
+          var title = item.level + '단계';
           datasets1.push({ label: title + ' 기대', data: series[item.id].exp, borderColor: color, borderDash: [5,4], borderWidth: 1.5, pointRadius: 0 });
           datasets1.push({ label: title + ' 실제', data: series[item.id].act, borderColor: color, borderWidth: 2.5, pointRadius: 0 });
         });
@@ -573,12 +583,22 @@
 
     function parseServerData(val) {
       if(!val) return;
-      if(val.items) items = val.items;
-      var rawData = val.data || {};
+
+      // 신규 items 구조 또는 기존 stages 구조에서 항목 리스트 복원
+      if (val.items) {
+        items = val.items;
+      } else if (val.stages && Array.isArray(val.stages)) {
+        items = val.stages.map(function(s){
+          return { id: String(s), level: Number(s) };
+        });
+      }
+
+      var rawData = val.data || val;
 
       items.forEach(function(item){
         initItemData(item.id);
-        var itemObj = rawData[item.id];
+        // 기존 숫자 key(7, 8, 9) 또는 신규 string ID key 조회
+        var itemObj = rawData[item.id] || rawData[item.level];
         if(itemObj){
           for(var d=0; d<DAYS; d++){
             var dayObj = itemObj[d];
