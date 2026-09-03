@@ -29,19 +29,12 @@
       margin: 0 auto; 
     }
 
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); backdrop-filter: blur(4px); }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); backdrop-filter: blur(4px); }
     h1 { font-size: 1.5rem; color: var(--cyan); text-shadow: 0 0 10px rgba(55,199,240,0.3); }
     .header-right { display: flex; align-items: center; gap: 12px; }
     #saveStatus { font-size: 0.9rem; color: var(--gold); font-weight: bold; }
     .btn-manual-save { background: var(--cyan); color: #000; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
     .btn-manual-save:hover { opacity: 0.9; }
-
-    /* 세션 선택 및 생성 바 */
-    .session-bar { background: var(--card-bg); backdrop-filter: blur(8px); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-    .session-left { display: flex; align-items: center; gap: 10px; }
-    .session-select { background: rgba(15, 23, 42, 0.9); color: var(--gold); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-weight: bold; font-size: 0.95rem; }
-    .btn-new-session { background: #10b981; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-    .btn-del-session { background: var(--pink); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
     .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
     .prob-card { background: var(--card-bg); backdrop-filter: blur(8px); padding: 16px; border-radius: 8px; border: 1px solid var(--border); position: relative; }
@@ -64,7 +57,10 @@
     .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
     .tab-btn { background: var(--card-bg); backdrop-filter: blur(8px); color: var(--text-sub); border: 1px solid var(--border); padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
     .tab-btn.active { background: var(--cyan); color: #000; border-color: var(--cyan); }
-    .btn-add-stage { background: var(--gold); color: #000; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    
+    .add-stage-wrap { display: flex; align-items: center; gap: 6px; background: var(--card-bg); backdrop-filter: blur(8px); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); }
+    .add-stage-select { background: rgba(15, 23, 42, 0.9); color: var(--gold); border: 1px solid var(--border); border-radius: 4px; padding: 6px; font-weight: bold; font-size: 0.85rem; }
+    .btn-add-stage { background: var(--gold); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
 
     .table-container { background: var(--card-bg); backdrop-filter: blur(8px); border-radius: 8px; overflow-x: auto; border: 1px solid var(--border); margin-bottom: 24px; }
     table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem; }
@@ -109,16 +105,6 @@
     </div>
   </header>
 
-  <!-- 기록 세션 선택 영역 -->
-  <div class="session-bar">
-    <div class="session-left">
-      <span style="font-size:0.9rem; color:var(--text-sub);">📁 기록 선택:</span>
-      <select id="sessionSelect" class="session-select"></select>
-      <button type="button" class="btn-new-session" id="newSessionBtn">+ 새 기록 만들기</button>
-    </div>
-    <button type="button" class="btn-del-session" id="delSessionBtn">현재 기록 삭제</button>
-  </div>
-
   <div class="grid-container" id="probGrid"></div>
   <div class="sucker-meter" id="suckerMeter"></div>
   
@@ -159,7 +145,6 @@
 
   <div class="totals-grid" id="totalsGrid"></div>
 
-  <!-- 차트 추가 래퍼 -->
   <div id="chartsWrapper">
     <div class="chart-container">
       <canvas id="cumChart"></canvas>
@@ -188,56 +173,46 @@
     }
     
     const database = firebase.database();
-    const dbRef = database.ref('shared_kraken_multi_session_data');
+    const dbRef = database.ref('shared_kraken_full_data');
 
-    // 1~9단계별 상자 획득 기본 확률 정의
-    var BASE_BOX_RATES = {
+    // 1~9단계별 상자 획득 확률표 정의
+    var BASE_RATES = {
       1: 0.5300, 2: 0.5500, 3: 0.5700, 4: 0.5900, 5: 0.6100,
       6: 0.6300, 7: 0.6500, 8: 0.6700, 9: 0.6900
     };
+
+    // 항목 리스트 (중복 허용을 위해 각 항목에 unique id와 level 저장)
+    var items = [
+      { id: 'item_1', level: 7 },
+      { id: 'item_2', level: 8 },
+      { id: 'item_3', level: 9 }
+    ];
+
     var DIST = {1:0.700963, 2:0.289037, 3:0.010000};
     var E_PER_BOX = 1*DIST[1] + 2*DIST[2] + 3*DIST[3];
     var DAYS = 30;
 
-    // 세션 및 데이터 관리 구조
-    var currentSessionId = 'default_session';
-    var sessions = {
-      'default_session': {
-        name: '기본 기록',
-        stageList: [
-          { id: 'stg_1', stageLevel: 7 },
-          { id: 'stg_2', stageLevel: 8 },
-          { id: 'stg_3', stageLevel: 9 }
-        ],
-        data: {}
-      }
-    };
-
-    var activeStageId = 'stg_1';
-
-    function ePerPlay(level){ 
-      var rate = BASE_BOX_RATES[level] || 0.65;
-      return rate * E_PER_BOX; 
-    }
+    function getRate(lvl){ return BASE_RATES[lvl] || 0.65; }
+    function ePerPlay(lvl){ return getRate(lvl) * E_PER_BOX; }
     function fmt(n, d){ d = (d===undefined)?6:d; return n.toLocaleString('ko-KR', {minimumFractionDigits:d, maximumFractionDigits:d}); }
     function pct(n, d){ d = (d===undefined)?4:d; return (n*100).toFixed(d) + '%'; }
 
-    function getCurSession(){
-      return sessions[currentSessionId] || null;
-    }
+    var activeId = 'item_1';
+    var data = {};
 
-    function initStageData(stageId) {
-      var sess = getCurSession();
-      if(sess && !sess.data[stageId]) {
-        sess.data[stageId] = [];
+    function initItemData(id) {
+      if(!data[id]) {
+        data[id] = [];
         for(var i=0; i<DAYS; i++){
-          sess.data[stageId].push({
+          data[id].push({
             isBurst: false,
             p: [null, null, null, null, null, null]
           });
         }
       }
     }
+
+    items.forEach(function(item){ initItemData(item.id); });
 
     function setStatus(text){
       var el = document.getElementById('saveStatus');
@@ -246,74 +221,50 @@
 
     function saveDataToServer(isManual){
       setStatus('저장 중…');
-      dbRef.set({
-        currentSessionId: currentSessionId,
-        sessions: sessions
-      })
-      .then(function(){
-        var t = new Date();
-        var timeStr = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
-        setStatus('저장완료 (' + timeStr + ')');
-        if(isManual){ alert('서버에 정상적으로 저장되었습니다!'); }
-      })
-      .catch(function(err){
-        console.error(err);
-        setStatus('저장 실패!');
-      });
-    }
-
-    function renderSessionBar(){
-      var sel = document.getElementById('sessionSelect');
-      if(!sel) return;
-      sel.innerHTML = '';
-
-      Object.keys(sessions).forEach(function(sId){
-        var opt = document.createElement('option');
-        opt.value = sId;
-        opt.textContent = sessions[sId].name;
-        if(sId === currentSessionId) opt.selected = true;
-        sel.appendChild(opt);
-      });
+      dbRef.set({ items: items, data: data })
+        .then(function(){
+          var t = new Date();
+          var timeStr = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+          setStatus('저장완료 (' + timeStr + ')');
+          if(isManual){ alert('서버에 정상적으로 저장되었습니다!'); }
+        })
+        .catch(function(err){
+          console.error(err);
+          setStatus('저장 실패!');
+        });
     }
 
     function renderProbGrid(){
       var grid = document.getElementById('probGrid');
       if(!grid) return;
       grid.innerHTML = '';
-      var sess = getCurSession();
-      if(!sess) return;
-
-      sess.stageList.forEach(function(stgItem){
-        var stgId = stgItem.id;
-        var level = stgItem.stageLevel;
-        var rate = BASE_BOX_RATES[level] || 0.65;
-
+      items.forEach(function(item, idx){
+        var id = item.id;
+        var lvl = item.level;
         var card = document.createElement('div');
         card.className = 'prob-card';
         card.innerHTML =
-          '<h3>' + level + '단계 <span class="stage-tag">STAGE ' + level + '</span>' +
-          (sess.stageList.length > 1 ? '<button class="btn-delete-stage" data-stgid="' + stgId + '">삭제</button>' : '') +
+          '<h3>#' + (idx+1) + ' (' + lvl + '단계)' +
+          (items.length > 1 ? '<button class="btn-delete-stage" data-id="' + id + '">삭제</button>' : '') +
           '</h3>' +
-          '<div class="prob-row"><span class="k">상자 획득 확률</span><span class="v cyan">' + pct(rate) + '</span></div>' +
+          '<div class="prob-row"><span class="k">상자 획득 확률</span><span class="v cyan">' + pct(getRate(lvl)) + '</span></div>' +
           '<div class="prob-row"><span class="k">모듈 1개 획득</span><span class="v">' + pct(DIST[1]) + '</span></div>' +
           '<div class="prob-row"><span class="k">모듈 2개 획득</span><span class="v">' + pct(DIST[2]) + '</span></div>' +
           '<div class="prob-row"><span class="k">모듈 3개 획득</span><span class="v">' + pct(DIST[3]) + '</span></div>' +
-          '<div class="expect-line"><span class="lbl">1회당 기댓값</span><span class="num">' + fmt(ePerPlay(level)) + '개</span></div>' +
-          '<div class="expect-line"><span class="lbl">일반일(3회) 기댓값</span><span class="num">' + fmt(ePerPlay(level)*3) + '개</span></div>' +
-          '<div class="expect-line"><span class="lbl">풀버스트(6회) 기댓값</span><span class="num" style="color:var(--pink)">' + fmt(ePerPlay(level)*6) + '개</span></div>';
+          '<div class="expect-line"><span class="lbl">1회당 기댓값</span><span class="num">' + fmt(ePerPlay(lvl)) + '개</span></div>' +
+          '<div class="expect-line"><span class="lbl">일반일(3회) 기댓값</span><span class="num">' + fmt(ePerPlay(lvl)*3) + '개</span></div>' +
+          '<div class="expect-line"><span class="lbl">풀버스트(6회) 기댓값</span><span class="num" style="color:var(--pink)">' + fmt(ePerPlay(lvl)*6) + '개</span></div>';
         grid.appendChild(card);
       });
 
       var delBtns = grid.querySelectorAll('.btn-delete-stage');
       delBtns.forEach(function(btn){
         btn.addEventListener('click', function(e){
-          var targetId = e.target.getAttribute('data-stgid');
-          if(confirm('해당 항목을 삭제하시겠습니까?')) {
-            sess.stageList = sess.stageList.filter(function(x){ return x.id !== targetId; });
-            delete sess.data[targetId];
-            if(activeStageId === targetId && sess.stageList.length > 0) {
-              activeStageId = sess.stageList[0].id;
-            }
+          var targetId = e.target.getAttribute('data-id');
+          if(confirm('이 항목을 삭제하시겠습니까?')) {
+            items = items.filter(function(x){ return x.id !== targetId; });
+            delete data[targetId];
+            if(activeId === targetId) activeId = items[0].id;
             renderAll();
             saveDataToServer(false);
           }
@@ -325,18 +276,14 @@
       var wrap = document.getElementById('suckerMeter');
       if(!wrap) return;
       wrap.innerHTML = '';
-      var sess = getCurSession();
-      if(!sess) return;
-
-      sess.stageList.forEach(function(stgItem){
-        var level = stgItem.stageLevel;
-        var rate = BASE_BOX_RATES[level] || 0.65;
-        var lit = Math.round(rate*10);
+      items.forEach(function(item, idx){
+        var lvl = item.level;
+        var lit = Math.round(getRate(lvl)*10);
         var row = document.createElement('div');
         row.style.display='flex'; row.style.alignItems='center'; row.style.marginRight='18px';
         var dots='';
         for(var i=0;i<10;i++){ dots += '<span class="sucker' + (i<lit?' lit':'') + '"></span>'; }
-        row.innerHTML = dots + '<span class="sucker-label">' + level + '단계 ' + pct(rate) + '</span>';
+        row.innerHTML = dots + '<span class="sucker-label">#' + (idx+1) + ' (' + lvl + '단계 ' + pct(getRate(lvl)) + ')</span>';
         row.style.gap='4px';
         wrap.appendChild(row);
       });
@@ -346,63 +293,56 @@
       var tabs = document.getElementById('stageTabs');
       if(!tabs) return;
       tabs.innerHTML = '';
-      var sess = getCurSession();
-      if(!sess) return;
-
-      sess.stageList.forEach(function(stgItem, idx){
-        var stgId = stgItem.id;
-        var level = stgItem.stageLevel;
+      items.forEach(function(item, idx){
+        var id = item.id;
+        var lvl = item.level;
         var btn = document.createElement('button');
-        btn.className = 'tab-btn' + (stgId === activeStageId ? ' active' : '');
+        btn.className = 'tab-btn' + (id===activeId?' active':'');
         btn.type = 'button';
-        btn.textContent = '#' + (idx+1) + ' (' + level + '단계)';
+        btn.textContent = '#' + (idx+1) + ' (' + lvl + '단계)';
         btn.addEventListener('click', function(){
-          activeStageId = stgId;
+          activeId = id;
           renderTabs();
           renderInputGrid();
         });
         tabs.appendChild(btn);
       });
 
-      // 중복 허용 단계 선택 드롭다운 및 추가 버튼
-      var addContainer = document.createElement('div');
-      addContainer.style.display = 'inline-flex';
-      addContainer.style.alignItems = 'center';
-      addContainer.style.gap = '6px';
+      // 1~9단계 선택 드롭다운 + 추가 버튼
+      var addWrap = document.createElement('div');
+      addWrap.className = 'add-stage-wrap';
 
-      var selectLevel = document.createElement('select');
-      selectLevel.className = 'play-select';
-      selectLevel.style.padding = '8px';
-      for(var lvl=1; lvl<=9; lvl++){
+      var select = document.createElement('select');
+      select.className = 'add-stage-select';
+      for(var l=1; l<=9; l++){
         var opt = document.createElement('option');
-        opt.value = lvl;
-        opt.textContent = lvl + '단계 선택';
-        if(lvl === 7) opt.selected = true;
-        selectLevel.appendChild(opt);
+        opt.value = l;
+        opt.textContent = l + '단계 선택';
+        if(l === 7) opt.selected = true;
+        select.appendChild(opt);
       }
 
       var addBtn = document.createElement('button');
       addBtn.className = 'btn-add-stage';
       addBtn.type = 'button';
-      addBtn.textContent = '+ 단계 추가';
+      addBtn.textContent = '+ 항목 추가';
       addBtn.addEventListener('click', function(){
-        var chosenLevel = parseInt(selectLevel.value, 10);
-        var newStgId = 'stg_' + Date.now();
-        sess.stageList.push({ id: newStgId, stageLevel: chosenLevel });
-        initStageData(newStgId);
-        activeStageId = newStgId;
+        var chosenLevel = parseInt(select.value, 10);
+        var newId = 'item_' + Date.now();
+        items.push({ id: newId, level: chosenLevel });
+        initItemData(newId);
+        activeId = newId;
         renderAll();
         saveDataToServer(false);
       });
 
-      addContainer.appendChild(selectLevel);
-      addContainer.appendChild(addBtn);
-      tabs.appendChild(addContainer);
+      addWrap.appendChild(select);
+      addWrap.appendChild(addBtn);
+      tabs.appendChild(addWrap);
     }
 
-    function dayActualSum(stageId, dayIdx){
-      var sess = getCurSession();
-      var dayObj = (sess && sess.data[stageId]) ? sess.data[stageId][dayIdx] : null;
+    function dayActualSum(id, dayIdx){
+      var dayObj = data[id] ? data[id][dayIdx] : null;
       if(!dayObj) return 0;
       var sum = 0;
       var maxPlays = dayObj.isBurst ? 6 : 3;
@@ -414,26 +354,21 @@
       return sum;
     }
 
-    function dayExpectedSum(stageLevel, stageId, dayIdx){
-      var sess = getCurSession();
-      var dayObj = (sess && sess.data[stageId]) ? sess.data[stageId][dayIdx] : null;
+    function dayExpectedSum(lvl, id, dayIdx){
+      var dayObj = data[id] ? data[id][dayIdx] : null;
       var plays = (dayObj && dayObj.isBurst) ? 6 : 3;
-      return ePerPlay(stageLevel) * plays;
+      return ePerPlay(lvl) * plays;
     }
 
     function renderInputGrid(){
       var body = document.getElementById('inputBody');
       if(!body) return;
       body.innerHTML = '';
-      var sess = getCurSession();
-      if(!sess) return;
-
-      initStageData(activeStageId);
       var cum = 0;
 
       for(var d=0; d<DAYS; d++){
-        var dayData = sess.data[activeStageId][d];
-        var daySum = dayActualSum(activeStageId, d);
+        var dayData = (data[activeId] && data[activeId][d]) ? data[activeId][d] : { isBurst: false, p: [null,null,null,null,null,null] };
+        var daySum = dayActualSum(activeId, d);
         cum += daySum;
 
         var tr = document.createElement('tr');
@@ -451,11 +386,11 @@
 
         (function(dayIdx, checkboxEl){
           checkboxEl.addEventListener('change', function(){
-            sess.data[activeStageId][dayIdx].isBurst = checkboxEl.checked;
+            data[activeId][dayIdx].isBurst = checkboxEl.checked;
             if(!checkboxEl.checked){
-              sess.data[activeStageId][dayIdx].p[3] = null;
-              sess.data[activeStageId][dayIdx].p[4] = null;
-              sess.data[activeStageId][dayIdx].p[5] = null;
+              data[activeId][dayIdx].p[3] = null;
+              data[activeId][dayIdx].p[4] = null;
+              data[activeId][dayIdx].p[5] = null;
             }
             renderInputGrid();
             renderAnalysis();
@@ -485,7 +420,7 @@
           (function(dayIdx, playIdx, selectEl){
             selectEl.addEventListener('change', function(){
               var v = selectEl.value;
-              sess.data[activeStageId][dayIdx].p[playIdx] = (v === '') ? null : parseInt(v, 10);
+              data[activeId][dayIdx].p[playIdx] = (v === '') ? null : parseInt(v, 10);
               renderInputGrid();
               renderAnalysis();
               saveDataToServer(false);
@@ -510,12 +445,12 @@
       }
     }
 
-    function cumulativeArrays(stageItem){
+    function cumulativeArrays(item){
       var expArr = [], actArr = [];
       var ce = 0, ca = 0;
       for(var d=0; d<DAYS; d++){
-        ce += dayExpectedSum(stageItem.stageLevel, stageItem.id, d);
-        ca += dayActualSum(stageItem.id, d);
+        ce += dayExpectedSum(item.level, item.id, d);
+        ca += dayActualSum(item.id, d);
         expArr.push(ce);
         actArr.push(ca);
       }
@@ -526,13 +461,11 @@
       var head = document.getElementById('analysisHeader');
       var body = document.getElementById('analysisBody');
       if(!head || !body) return;
-      var sess = getCurSession();
-      if(!sess) return;
 
       var tr1 = '<tr><th rowspan="2">일차</th>';
       var tr2 = '<tr>';
-      sess.stageList.forEach(function(stgItem, idx){
-        tr1 += '<th colspan="3">#' + (idx+1) + ' (' + stgItem.stageLevel + '단계)</th>';
+      items.forEach(function(item, idx){
+        tr1 += '<th colspan="3">#' + (idx+1) + ' (' + item.level + '단계)</th>';
         tr2 += '<th>기대</th><th>실제</th><th>차이</th>';
       });
       tr1 += '</tr>';
@@ -541,9 +474,7 @@
 
       body.innerHTML = '';
       var series = {};
-      sess.stageList.forEach(function(stgItem){ 
-        series[stgItem.id] = cumulativeArrays(stgItem); 
-      });
+      items.forEach(function(item){ series[item.id] = cumulativeArrays(item); });
 
       for(var d=0; d<DAYS; d++){
         var tr = document.createElement('tr');
@@ -552,9 +483,9 @@
         tdDay.textContent = 'D+' + (d+1);
         tr.appendChild(tdDay);
 
-        sess.stageList.forEach(function(stgItem){
-          var exp = series[stgItem.id].exp[d];
-          var act = series[stgItem.id].act[d];
+        items.forEach(function(item){
+          var exp = series[item.id].exp[d];
+          var act = series[item.id].act[d];
           var diff = act - exp;
           var tdE = document.createElement('td'); tdE.textContent = fmt(exp);
           var tdA = document.createElement('td'); tdA.textContent = act + '개';
@@ -574,20 +505,17 @@
       var grid = document.getElementById('totalsGrid');
       if(!grid) return;
       grid.innerHTML = '';
-      var sess = getCurSession();
-      if(!sess) return;
-
       var grandExp = 0, grandAct = 0;
 
-      sess.stageList.forEach(function(stgItem, idx){
-        var exp = series[stgItem.id].exp[DAYS-1];
-        var act = series[stgItem.id].act[DAYS-1];
+      items.forEach(function(item, idx){
+        var exp = series[item.id].exp[DAYS-1];
+        var act = series[item.id].act[DAYS-1];
         grandExp += exp; grandAct += act;
 
         var card = document.createElement('div');
         card.className = 'total-card';
         card.innerHTML =
-          '<div class="t-label">#' + (idx+1) + ' (' + stgItem.stageLevel + '단계) 누적</div>' +
+          '<div class="t-label">#' + (idx+1) + ' (' + item.level + '단계) 누적</div>' +
           '<div class="t-value expected" style="color:var(--gold)">' + fmt(exp) + '</div>' +
           '<div class="t-sub">기댓값 합계 (개)</div>' +
           '<div class="t-value actual" style="color:var(--cyan);margin-top:10px;">' + act + '</div>' +
@@ -610,8 +538,6 @@
 
     function renderCharts(series){
       if (typeof Chart === 'undefined') return;
-      var sess = getCurSession();
-      if(!sess) return;
 
       var labels = [];
       for(var d=1; d<=DAYS; d++) labels.push('D+'+d);
@@ -621,11 +547,11 @@
       if(canvas1){
         var ctx1 = canvas1.getContext('2d');
         var datasets1 = [];
-        sess.stageList.forEach(function(stgItem, idx){
+        items.forEach(function(item, idx){
           var color = defaultColors[idx % defaultColors.length];
-          var labelName = '#' + (idx+1) + ' (' + stgItem.stageLevel + '단계)';
-          datasets1.push({ label: labelName + ' 기대', data: series[stgItem.id].exp, borderColor: color, borderDash: [5,4], borderWidth: 1.5, pointRadius: 0 });
-          datasets1.push({ label: labelName + ' 실제', data: series[stgItem.id].act, borderColor: color, borderWidth: 2.5, pointRadius: 0 });
+          var title = '#' + (idx+1) + ' (' + item.level + '단계)';
+          datasets1.push({ label: title + ' 기대', data: series[item.id].exp, borderColor: color, borderDash: [5,4], borderWidth: 1.5, pointRadius: 0 });
+          datasets1.push({ label: title + ' 실제', data: series[item.id].act, borderColor: color, borderWidth: 2.5, pointRadius: 0 });
         });
 
         if(chartInstances['cumChart']){ chartInstances['cumChart'].destroy(); }
@@ -645,8 +571,32 @@
       }
     }
 
+    function parseServerData(val) {
+      if(!val) return;
+      if(val.items) items = val.items;
+      var rawData = val.data || {};
+
+      items.forEach(function(item){
+        initItemData(item.id);
+        var itemObj = rawData[item.id];
+        if(itemObj){
+          for(var d=0; d<DAYS; d++){
+            var dayObj = itemObj[d];
+            if(dayObj){
+              var isBurst = !!dayObj.isBurst;
+              var rawP = dayObj.p || [];
+              var pArr = [];
+              for(var i=0; i<6; i++){
+                pArr[i] = (rawP[i] !== undefined && rawP[i] !== null) ? Number(rawP[i]) : null;
+              }
+              data[item.id][d] = { isBurst: isBurst, p: pArr };
+            }
+          }
+        }
+      });
+    }
+
     function renderAll() {
-      renderSessionBar();
       renderProbGrid();
       renderSuckerMeter();
       renderTabs();
@@ -654,78 +604,14 @@
       renderAnalysis();
     }
 
-    // 기록 세션 변경 이벤트
-    var sessionSelect = document.getElementById('sessionSelect');
-    if(sessionSelect){
-      sessionSelect.addEventListener('change', function(e){
-        currentSessionId = e.target.value;
-        var sess = getCurSession();
-        if(sess && sess.stageList.length > 0) {
-          activeStageId = sess.stageList[0].id;
-        }
-        renderAll();
-        saveDataToServer(false);
-      });
-    }
-
-    // 새 기록 생성 버튼
-    var newSessionBtn = document.getElementById('newSessionBtn');
-    if(newSessionBtn){
-      newSessionBtn.addEventListener('click', function(){
-        var name = prompt('새 기록 이름을 입력하세요:', '2차 진행 기록');
-        if(name) {
-          var sId = 'session_' + Date.now();
-          sessions[sId] = {
-            name: name,
-            stageList: [
-              { id: 'stg_1', stageLevel: 7 },
-              { id: 'stg_2', stageLevel: 8 },
-              { id: 'stg_3', stageLevel: 9 }
-            ],
-            data: {}
-          };
-          currentSessionId = sId;
-          activeStageId = 'stg_1';
-          renderAll();
-          saveDataToServer(false);
-        }
-      });
-    }
-
-    // 현재 기록 삭제 버튼
-    var delSessionBtn = document.getElementById('delSessionBtn');
-    if(delSessionBtn){
-      delSessionBtn.addEventListener('click', function(){
-        var keys = Object.keys(sessions);
-        if(keys.length <= 1) {
-          alert('최소 1개의 기록은 유지되어야 합니다.');
-          return;
-        }
-        if(confirm('현재 기록 [' + sessions[currentSessionId].name + ']을 삭제하시겠습니까?')) {
-          delete sessions[currentSessionId];
-          currentSessionId = Object.keys(sessions)[0];
-          activeStageId = sessions[currentSessionId].stageList[0].id;
-          renderAll();
-          saveDataToServer(false);
-        }
-      });
-    }
-
     function listenData(){
       dbRef.on('value', function(snapshot){
         var val = snapshot.val();
-        if(val && val.sessions){
-          sessions = val.sessions;
-          currentSessionId = val.currentSessionId || Object.keys(sessions)[0];
-          var sess = getCurSession();
-          if(sess && sess.stageList.length > 0) {
-            if(!sess.stageList.some(function(x){ return x.id === activeStageId; })) {
-              activeStageId = sess.stageList[0].id;
-            }
-          }
+        if(val){
+          parseServerData(val);
           setStatus('실시간 동기화 완료');
         } else {
-          setStatus('연동 완료 (데이터 기본값)');
+          setStatus('연동 완료 (데이터 없음)');
         }
         renderAll();
       }, function(err){
@@ -744,12 +630,11 @@
     var resetBtn = document.getElementById('resetBtn');
     if(resetBtn){
       resetBtn.addEventListener('click', function(){
-        var sess = getCurSession();
-        if(!sess) return;
-        var ok = confirm('현재 선택된 항목 기록을 초기화하시겠습니까?');
+        var ok = confirm('현재 선택된 항목의 기록을 초기화하시겠습니까?');
         if(!ok) return;
-        sess.data[activeStageId] = [];
-        initStageData(activeStageId);
+        for(var i=0; i<DAYS; i++){
+          data[activeId][i] = { isBurst: false, p: [null,null,null,null,null,null] };
+        }
         renderInputGrid();
         renderAnalysis();
         saveDataToServer(false);
