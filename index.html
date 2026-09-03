@@ -31,10 +31,14 @@
 
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); backdrop-filter: blur(4px); }
     h1 { font-size: 1.5rem; color: var(--cyan); text-shadow: 0 0 10px rgba(55,199,240,0.3); }
-    .header-right { display: flex; align-items: center; gap: 12px; }
-    #saveStatus { font-size: 0.9rem; color: var(--gold); font-weight: bold; }
-    .btn-manual-save { background: var(--cyan); color: #000; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-    .btn-manual-save:hover { opacity: 0.9; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    #saveStatus { font-size: 0.85rem; color: var(--gold); font-weight: bold; }
+    
+    /* 버튼 스타일 */
+    .btn-action { color: #000; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 0.85rem; }
+    .btn-action:hover { opacity: 0.85; }
+    .btn-load { background: var(--gold); color: #000; }
+    .btn-save { background: var(--cyan); color: #000; }
 
     .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
     .prob-card { background: var(--card-bg); backdrop-filter: blur(8px); padding: 16px; border-radius: 8px; border: 1px solid var(--border); position: relative; }
@@ -101,7 +105,9 @@
     <h1>크라켄 분석기</h1>
     <div class="header-right">
       <div id="saveStatus">서버 연결 중…</div>
-      <button type="button" class="btn-manual-save" id="manualSaveBtn">💾 기록 저장하기</button>
+      <!-- 서버 데이터 강제 불러오기 버튼 추가 -->
+      <button type="button" class="btn-action btn-load" id="manualFetchBtn">🔄 서버 기록 불러오기</button>
+      <button type="button" class="btn-action btn-save" id="manualSaveBtn">💾 기록 저장하기</button>
     </div>
   </header>
 
@@ -175,13 +181,11 @@
     const database = firebase.database();
     const dbRef = database.ref('shared_kraken_full_data');
 
-    // 1~9단계 기본 확률 데이터
     var BASE_RATES = {
       1: 0.5300, 2: 0.5500, 3: 0.5700, 4: 0.5900, 5: 0.6100,
       6: 0.6300, 7: 0.6500, 8: 0.6700, 9: 0.6900
     };
 
-    // 기본 7, 8, 9 단계 목록 (기존 DB 구조와 완벽 호환)
     var items = [
       { id: '7', level: 7 },
       { id: '8', level: 8 },
@@ -199,7 +203,7 @@
 
     var activeId = '7';
     var data = {};
-    var isDataLoaded = false; // 데이터 로드 전 저장되는 것을 방지하는 안전장치
+    var isDataLoaded = false;
 
     function initItemData(id) {
       if(!data[id]) {
@@ -220,19 +224,37 @@
       if(el) el.textContent = text;
     }
 
+    // 서버 데이터를 강제로 다시 읽어오는 함수
+    function fetchServerData(isManual) {
+      setStatus('데이터 불러오는 중…');
+      dbRef.once('value').then(function(snapshot){
+        var val = snapshot.val();
+        if(val) {
+          parseServerData(val);
+          renderAll();
+          setStatus('불러오기 완료!');
+          if(isManual) alert('서버에서 최신 기록을 성공적으로 불러왔습니다!');
+        } else {
+          setStatus('서버 데이터 없음');
+          if(isManual) alert('서버에 저장된 데이터가 없습니다.');
+        }
+      }).catch(function(err){
+        console.error(err);
+        setStatus('불러오기 실패');
+      });
+    }
+
     function saveDataToServer(isManual){
-      if(!isDataLoaded && !isManual) return; // 데이터 불러오기 전에 자동저장 방지
+      if(!isDataLoaded && !isManual) return;
 
       setStatus('저장 중…');
       var stagesArr = items.map(function(x){ return x.level; });
       var boxRatesObj = {};
       items.forEach(function(x){ boxRatesObj[x.level] = getRate(x.level); });
 
-      // 기존 데이터 키("7", "8", "9")와 새로운 키 호환성을 유지하여 저장
       var dataToSave = {};
       items.forEach(function(item){
         dataToSave[item.id] = data[item.id];
-        // 기존 백엔드 지원을 위해 숫자 Key도 함께 복사
         dataToSave[item.level] = data[item.id];
       });
 
@@ -590,7 +612,7 @@
       }
     }
 
-    // 서버의 기존/신규 데이터를 복원하는 완벽 하위호환 파서
+    // 서버의 이전/신규 데이터를 복원하는 완벽 파서
     function parseServerData(val) {
       if(!val) return;
 
@@ -606,7 +628,7 @@
 
       items.forEach(function(item){
         initItemData(item.id);
-        // 숫자 key(7, 8, 9)와 문자열 key 모두 조회하여 복원
+        // 숫자 key(7, 8, 9)와 문자열 key 모두 조회하여 원래 저장해둔 데이터 복원
         var itemObj = rawData[item.id] || rawData[item.level] || rawData[String(item.level)];
         if(itemObj){
           for(var d=0; d<DAYS; d++){
@@ -648,6 +670,14 @@
       }, function(err){
         console.error(err);
         setStatus('서버 연동 오류!');
+      });
+    }
+
+    // 이벤트 리스너
+    var manualFetchBtn = document.getElementById('manualFetchBtn');
+    if(manualFetchBtn){
+      manualFetchBtn.addEventListener('click', function(){
+        fetchServerData(true);
       });
     }
 
