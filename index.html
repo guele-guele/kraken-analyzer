@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>크라운켄 | NIKKE SPECIAL</title>
+  <title>크라운켄 분석기 | NIKKE SPECIAL</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Noto+Sans+KR:wght@400;700;900&display=swap');
@@ -22,7 +22,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; }
 
     body { 
-      background: radial-gradient(circle at 50% 20%, #151b33 0%, var(--bg-dark) 80%), url('https://i.ibb.co/6y40H0z/kraken-bg.png') no-repeat center center fixed;
+      background: radial-gradient(circle at 50% 20%, #151b33 0%, var(--bg-dark) 80%), url('kraken.jpg') no-repeat center center fixed;
       background-size: cover;
       color: var(--text-main); 
       padding: 24px 16px; 
@@ -48,6 +48,7 @@
       border-radius: 50%;
       border: 2px solid var(--gold);
       box-shadow: 0 0 8px rgba(255,190,0,0.6);
+      background: #000;
     }
 
     h1 {
@@ -167,9 +168,9 @@
 
   <header>
     <div class="header-title-wrap">
-      <!-- 업로드해주신 크라운 캐릭터 이미지 적용 -->
-      <img src="https://i.ibb.co/3s6q40P/crown-icon.png" alt="크라운 아이콘" class="kraken-icon" onerror="this.src='https://i.ibb.co/6y40H0z/kraken-bg.png'">
-      <h1>크라운켄</h1>
+      <!-- 로컬 파일로 추가한 crown.png (또는 crown.jpg) 이미지를 아이콘으로 불러옵니다 -->
+      <img src="crown.png" alt="크라운 아이콘" class="kraken-icon" onerror="this.src='kraken.jpg'">
+      <h1>크라운켄 분석기</h1>
     </div>
     <div class="header-right">
       <div class="level-box">
