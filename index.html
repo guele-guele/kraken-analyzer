@@ -3,116 +3,124 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>크라운켄 | NIKKE SPECIAL</title>
+  <title>크라운켄 | NIKKE LAST KINGDOM</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Noto+Sans+KR:wght@400;700;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Noto+Serif+KR:wght@600;900&family=Noto+Sans+KR:wght@400;700;900&display=swap');
 
     :root {
-      --bg-dark: #070913;
-      --card-bg: rgba(15, 20, 35, 0.88);
-      --card-border: rgba(0, 240, 255, 0.3);
-      --text-main: #f0f4f8;
-      --text-sub: #8a99ad;
-      --cyan: #00f0ff;
-      --gold: #ffbe00;
-      --pink: #ff0055;
+      --bg-dark: #080a10;
+      --card-bg: rgba(16, 18, 28, 0.88);
+      --royal-gold: #f3ca6c;
+      --gold-bright: #ffe699;
+      --gold-dark: #b88d33;
+      --crown-white: #f8fafc;
+      --text-sub: #a0aec0;
+      --cyan: #38bdf8;
+      --pink: #ff3366;
+      --card-border: rgba(243, 202, 108, 0.35);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; }
 
     body { 
-      background: radial-gradient(circle at 50% 20%, #151b33 0%, var(--bg-dark) 80%), url('kraken.jpg') no-repeat center center fixed;
+      background: radial-gradient(circle at 50% 15%, #1e1b2e 0%, var(--bg-dark) 85%), url('kraken.jpg') no-repeat center center fixed;
       background-size: cover;
-      color: var(--text-main); 
+      color: var(--crown-white); 
       padding: 24px 16px; 
-      max-width: 1350px; 
+      max-width: 1380px; 
       margin: 0 auto; 
     }
 
+    /* 니케 LAST KINGDOM 헤더 디자인 */
     header {
       display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 28px; padding: 16px 20px;
-      background: rgba(10, 14, 26, 0.92);
-      border: 1px solid var(--cyan);
+      margin-bottom: 28px; padding: 18px 24px;
+      background: linear-gradient(135deg, rgba(20, 22, 36, 0.95), rgba(10, 11, 18, 0.95));
+      border: 1px solid var(--royal-gold);
       border-radius: 8px;
-      box-shadow: 0 0 15px rgba(0, 240, 255, 0.25), inset 0 0 15px rgba(0, 240, 255, 0.1);
-      backdrop-filter: blur(8px);
-      flex-wrap: wrap; gap: 14px;
+      box-shadow: 0 0 20px rgba(243, 202, 108, 0.25), inset 0 0 15px rgba(243, 202, 108, 0.1);
+      backdrop-filter: blur(10px);
+      flex-wrap: wrap; gap: 16px;
     }
 
-    .header-title-wrap { display: flex; align-items: center; gap: 12px; }
-    .kraken-icon {
-      width: 45px; height: 45px;
+    .header-title-wrap { display: flex; align-items: center; gap: 14px; }
+    .crown-icon {
+      width: 48px; height: 48px;
       object-fit: cover;
       border-radius: 50%;
-      border: 2px solid var(--gold);
-      box-shadow: 0 0 8px rgba(255,190,0,0.6);
+      border: 2px solid var(--royal-gold);
+      box-shadow: 0 0 12px rgba(243, 202, 108, 0.6);
       background: #000;
     }
 
     h1 {
-      font-family: 'Orbitron', 'Noto Sans KR', sans-serif;
-      font-size: 1.6rem; font-weight: 900;
-      color: #fff;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      text-shadow: 0 0 10px var(--cyan);
+      font-family: 'Cinzel', 'Noto Serif KR', serif;
+      font-size: 2rem; font-weight: 900;
+      background: linear-gradient(180deg, #ffffff 0%, var(--royal-gold) 70%, var(--gold-dark) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 2px;
+      text-shadow: 0 0 12px rgba(243, 202, 108, 0.4);
     }
 
     .header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    #saveStatus { font-family: 'Orbitron', sans-serif; font-size: 0.85rem; color: var(--gold); font-weight: bold; text-shadow: 0 0 6px rgba(255,190,0,0.5); }
-    
-    .level-box {
-      background: rgba(0, 0, 0, 0.6);
-      border: 1px solid var(--gold);
-      border-radius: 6px; padding: 6px 12px;
-      display: flex; align-items: center; gap: 8px;
-      font-size: 0.85rem; color: var(--text-main);
-      box-shadow: 0 0 8px rgba(255, 190, 0, 0.2);
-    }
-    .level-input {
-      width: 65px; background: #000; color: var(--gold);
-      border: 1px solid var(--gold); border-radius: 4px;
-      padding: 4px; text-align: center; font-family: 'Orbitron', sans-serif; font-weight: bold;
+    #saveStatus { 
+      font-family: 'Cinzel', 'Noto Sans KR', sans-serif;
+      font-size: 0.85rem; color: var(--gold-bright); 
+      font-weight: bold; text-shadow: 0 0 8px rgba(243, 202, 108, 0.5); 
     }
 
     .btn-action {
       font-family: 'Noto Sans KR', sans-serif;
-      border: none; padding: 8px 14px; border-radius: 4px;
+      border: none; padding: 9px 16px; border-radius: 4px;
       font-weight: bold; cursor: pointer; transition: all 0.2s ease;
       font-size: 0.85rem;
     }
-    .btn-load { background: var(--gold); color: #000; box-shadow: 0 0 10px rgba(255, 190, 0, 0.4); }
-    .btn-save { background: var(--cyan); color: #000; box-shadow: 0 0 10px rgba(0, 240, 255, 0.4); }
-    .btn-action:hover { transform: translateY(-2px); filter: brightness(1.2); }
+    .btn-load { background: linear-gradient(180deg, var(--gold-bright), var(--royal-gold)); color: #111; box-shadow: 0 0 12px rgba(243, 202, 108, 0.4); }
+    .btn-save { background: linear-gradient(180deg, #7dd3fc, var(--cyan)); color: #111; box-shadow: 0 0 12px rgba(56, 189, 248, 0.4); }
+    .btn-action:hover { transform: translateY(-2px); filter: brightness(1.25); }
 
-    .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 18px; margin-bottom: 28px; }
+    .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; margin-bottom: 28px; }
     .prob-card {
       background: var(--card-bg); backdrop-filter: blur(10px);
       padding: 18px; border-radius: 8px;
       border: 1px solid var(--card-border);
-      box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.05);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(243, 202, 108, 0.05);
       position: relative; transition: 0.3s;
     }
-    .prob-card:hover { border-color: var(--cyan); box-shadow: 0 0 15px rgba(0, 240, 255, 0.3); }
+    .prob-card:hover { border-color: var(--royal-gold); box-shadow: 0 0 18px rgba(243, 202, 108, 0.3); }
     .prob-card h3 {
-      font-family: 'Orbitron', sans-serif; font-size: 1.15rem;
-      margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; color: var(--cyan);
+      font-family: 'Cinzel', 'Noto Serif KR', serif; font-size: 1.2rem;
+      margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; color: var(--royal-gold);
     }
-    .stage-tag { font-size: 0.75rem; background: rgba(0,240,255,0.15); color: var(--cyan); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--cyan); }
+    .stage-tag { font-size: 0.75rem; background: rgba(243, 202, 108, 0.15); color: var(--gold-bright); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--royal-gold); }
     .btn-delete-stage { background: transparent; border: 1px solid var(--pink); color: var(--pink); font-size: 0.75rem; border-radius: 4px; padding: 2px 8px; cursor: pointer; }
     .btn-delete-stage:hover { background: var(--pink); color: #fff; box-shadow: 0 0 8px var(--pink); }
 
+    /* 단계별 개별 싱크로 레벨 설정 박스 */
+    .synchro-box {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--royal-gold);
+      border-radius: 6px; padding: 8px 12px;
+      margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;
+      font-size: 0.85rem; color: var(--gold-bright); font-weight: bold;
+    }
+    .synchro-input {
+      width: 75px; background: #080a10; color: var(--gold-bright);
+      border: 1px solid var(--royal-gold); border-radius: 4px;
+      padding: 4px; text-align: center; font-weight: bold; font-family: 'Cinzel', sans-serif;
+    }
+
     .prob-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-sub); }
-    .prob-row .v { color: var(--text-main); font-weight: bold; }
-    .prob-row .cyan { color: var(--cyan); text-shadow: 0 0 5px var(--cyan); }
-    .expect-line { display: flex; justify-content: space-between; border-top: 1px dashed rgba(255,255,255,0.15); margin-top: 8px; padding-top: 8px; font-weight: bold; font-size: 0.9rem; }
-    .expect-line .num { color: var(--gold); text-shadow: 0 0 5px rgba(255,190,0,0.5); }
+    .prob-row .v { color: var(--crown-white); font-weight: bold; }
+    .prob-row .gold { color: var(--royal-gold); }
+    .expect-line { display: flex; justify-content: space-between; border-top: 1px dashed rgba(243, 202, 108, 0.25); margin-top: 8px; padding-top: 8px; font-weight: bold; font-size: 0.9rem; }
+    .expect-line .num { color: var(--gold-bright); text-shadow: 0 0 5px rgba(243, 202, 108, 0.5); }
 
     .sucker-meter { display: flex; flex-wrap: wrap; background: var(--card-bg); backdrop-filter: blur(10px); padding: 14px 18px; border-radius: 8px; margin-bottom: 28px; border: 1px solid var(--card-border); }
-    .sucker { width: 8px; height: 8px; border-radius: 50%; background: #2a364f; }
-    .sucker.lit { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+    .sucker { width: 8px; height: 8px; border-radius: 50%; background: #2a324b; }
+    .sucker.lit { background: var(--royal-gold); box-shadow: 0 0 8px var(--royal-gold); }
     .sucker-label { font-size: 0.8rem; color: var(--text-sub); margin-left: 6px; }
 
     .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
@@ -120,63 +128,58 @@
       background: var(--card-bg); backdrop-filter: blur(8px); color: var(--text-sub);
       border: 1px solid var(--card-border); padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s;
     }
-    .tab-btn.active { background: var(--cyan); color: #000; border-color: var(--cyan); box-shadow: 0 0 12px rgba(0, 240, 255, 0.5); }
+    .tab-btn.active { background: var(--royal-gold); color: #111; border-color: var(--royal-gold); box-shadow: 0 0 14px rgba(243, 202, 108, 0.5); }
     
     .add-stage-wrap { display: flex; align-items: center; gap: 8px; background: var(--card-bg); backdrop-filter: blur(8px); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--card-border); }
-    .add-stage-select { background: #070913; color: var(--gold); border: 1px solid var(--gold); border-radius: 4px; padding: 6px 10px; font-weight: bold; font-size: 0.85rem; }
-    .btn-add-stage { background: var(--gold); color: #000; border: none; padding: 6px 14px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+    .add-stage-select { background: #080a10; color: var(--gold-bright); border: 1px solid var(--royal-gold); border-radius: 4px; padding: 6px 10px; font-weight: bold; font-size: 0.85rem; }
+    .btn-add-stage { background: var(--royal-gold); color: #111; border: none; padding: 6px 14px; border-radius: 4px; font-weight: bold; cursor: pointer; }
 
     .table-container { background: var(--card-bg); backdrop-filter: blur(10px); border-radius: 8px; overflow-x: auto; border: 1px solid var(--card-border); margin-bottom: 28px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
     table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem; }
-    th, td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; }
-    th { background: rgba(7, 9, 19, 0.95); color: var(--text-sub); letter-spacing: 0.5px; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid rgba(243, 202, 108, 0.12); white-space: nowrap; }
+    th { background: rgba(8, 10, 16, 0.95); color: var(--royal-gold); letter-spacing: 0.5px; font-family: 'Cinzel', 'Noto Serif KR', serif; }
 
-    th.burst-col { background: rgba(255, 0, 85, 0.25); color: var(--pink); }
-    td.burst-cell { background: rgba(255, 0, 85, 0.08); }
+    th.burst-col { background: rgba(255, 51, 102, 0.25); color: var(--pink); }
+    td.burst-cell { background: rgba(255, 51, 102, 0.08); }
 
     .play-select {
-      background: #070913; color: var(--text-main); border: 1px solid var(--card-border);
+      background: #080a10; color: var(--crown-white); border: 1px solid var(--card-border);
       border-radius: 4px; padding: 5px; width: 88px; text-align: center; font-weight: bold;
     }
-    .play-select.has-value { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 6px rgba(0, 240, 255, 0.3); }
+    .play-select.has-value { border-color: var(--royal-gold); color: var(--gold-bright); box-shadow: 0 0 6px rgba(243, 202, 108, 0.3); }
 
     .burst-check { width: 18px; height: 18px; accent-color: var(--pink); cursor: pointer; }
 
     .input-row-group { display: flex; flex-direction: column; gap: 6px; justify-content: center; }
     .input-sub-row { display: flex; gap: 6px; justify-content: center; align-items: center; }
 
-    .sum-cell { font-weight: bold; color: var(--gold); font-family: 'Orbitron', sans-serif; }
-    .cum-cell { font-weight: bold; color: var(--cyan); font-family: 'Orbitron', sans-serif; }
+    .sum-cell { font-weight: bold; color: var(--gold-bright); font-family: 'Cinzel', sans-serif; }
+    .cum-cell { font-weight: bold; color: var(--cyan); font-family: 'Cinzel', sans-serif; }
 
     .diff-pos { color: #4ade80; text-shadow: 0 0 5px rgba(74, 222, 128, 0.4); }
     .diff-neg { color: #f87171; text-shadow: 0 0 5px rgba(248, 113, 113, 0.4); }
 
     .totals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 18px; margin-bottom: 28px; }
     .total-card { background: var(--card-bg); backdrop-filter: blur(10px); padding: 18px; border-radius: 8px; border: 1px solid var(--card-border); }
-    .total-card.grand { border-color: var(--cyan); box-shadow: 0 0 15px rgba(0, 240, 255, 0.2); }
+    .total-card.grand { border-color: var(--royal-gold); box-shadow: 0 0 15px rgba(243, 202, 108, 0.25); }
     .t-label { font-size: 0.8rem; color: var(--text-sub); margin-bottom: 6px; }
-    .t-value { font-size: 1.25rem; font-weight: bold; font-family: 'Orbitron', sans-serif; }
+    .t-value { font-size: 1.25rem; font-weight: bold; font-family: 'Cinzel', sans-serif; }
     .t-sub { font-size: 0.75rem; color: var(--text-sub); margin-top: 4px; }
 
     .chart-container { background: var(--card-bg); backdrop-filter: blur(10px); padding: 18px; border-radius: 8px; border: 1px solid var(--card-border); height: 330px; margin-bottom: 28px; }
 
     .ctrl-bar { display: flex; justify-content: flex-end; }
-    .btn-reset { background: var(--pink); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; box-shadow: 0 0 10px rgba(255, 0, 85, 0.4); }
+    .btn-reset { background: var(--pink); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; box-shadow: 0 0 10px rgba(255, 51, 102, 0.4); }
   </style>
 </head>
 <body>
 
   <header>
     <div class="header-title-wrap">
-      <!-- 로컬 파일로 추가한 crown.png (또는 crown.jpg) 이미지를 아이콘으로 불러옵니다 -->
-      <img src="crown.png" alt="크라운 아이콘" class="kraken-icon" onerror="this.src='kraken.jpg'">
+      <img src="crown.png" alt="크라운 아이콘" class="crown-icon" onerror="this.src='kraken.jpg'">
       <h1>크라운켄</h1>
     </div>
     <div class="header-right">
-      <div class="level-box">
-        <span>⚔️ 지휘관 레벨:</span>
-        <input type="number" id="userLevelInput" class="level-input" value="350" min="1" max="1000">
-      </div>
       <div id="saveStatus">서버 동기화 대기…</div>
       <button type="button" class="btn-action btn-load" id="manualFetchBtn">🔄 기록 불러오기</button>
       <button type="button" class="btn-action btn-save" id="manualSaveBtn">💾 기록 저장</button>
@@ -208,7 +211,7 @@
     <button class="btn-reset" id="resetBtn" type="button">현재 단계 기록 초기화</button>
   </div>
 
-  <h2 style="font-size: 1.2rem; margin-bottom: 14px; color: var(--cyan); text-shadow: 0 0 8px var(--cyan);">30일 누적 통계 분석</h2>
+  <h2 style="font-size: 1.2rem; margin-bottom: 14px; color: var(--royal-gold); text-shadow: 0 0 8px var(--royal-gold); font-family: 'Cinzel', 'Noto Serif KR', serif;">30일 누적 통계 분석</h2>
   <div class="table-container">
     <table>
       <thead id="analysisHeader"></thead>
@@ -253,22 +256,23 @@
       6: 0.6300, 7: 0.6500, 8: 0.6700, 9: 0.6900
     };
 
+    // 단계별 객체에 synchroLevel 기본값 포함
     var items = [
-      { id: '7', level: 7 },
-      { id: '8', level: 8 },
-      { id: '9', level: 9 }
+      { id: '7', level: 7, synchroLevel: 350 },
+      { id: '8', level: 8, synchroLevel: 350 },
+      { id: '9', level: 9, synchroLevel: 350 }
     ];
 
     var DIST = {1:0.700963, 2:0.289037, 3:0.010000};
     var E_PER_BOX = 1*DIST[1] + 2*DIST[2] + 3*DIST[3];
     var DAYS = 30;
 
-    var userAccountLevel = 350;
-
-    function getMaxPlays(isBurst) {
+    // 해당 단계의 싱크로 레벨에 따른 최대 횟수 계산 함수
+    function getItemMaxPlays(item, isBurst) {
+      var sLvl = item.synchroLevel || 350;
       var base = 3;
-      if (userAccountLevel >= 600) base = 5;
-      else if (userAccountLevel >= 400) base = 4;
+      if (sLvl >= 600) base = 5;
+      else if (sLvl >= 400) base = 4;
       return isBurst ? base * 2 : base;
     }
 
@@ -337,8 +341,7 @@
         stages: stagesArr, 
         boxRates: boxRatesObj, 
         items: items, 
-        data: dataToSave,
-        userLevel: userAccountLevel
+        data: dataToSave
       })
       .then(function(){
         var t = new Date();
@@ -357,19 +360,25 @@
       if(!grid) return;
       grid.innerHTML = '';
       
-      var baseNormal = (userAccountLevel >= 600) ? 5 : ((userAccountLevel >= 400) ? 4 : 3);
-      var baseBurst = baseNormal * 2;
-
       items.forEach(function(item){
         var id = item.id;
         var lvl = item.level;
+        var sLvl = item.synchroLevel || 350;
+
+        var baseNormal = (sLvl >= 600) ? 5 : ((sLvl >= 400) ? 4 : 3);
+        var baseBurst = baseNormal * 2;
+
         var card = document.createElement('div');
         card.className = 'prob-card';
         card.innerHTML =
           '<h3>' + lvl + '단계 <span class="stage-tag">STAGE ' + lvl + '</span>' +
           (items.length > 1 ? '<button class="btn-delete-stage" data-id="' + id + '">삭제</button>' : '') +
           '</h3>' +
-          '<div class="prob-row"><span class="k">상자 획득 확률</span><span class="v cyan">' + pct(getRate(lvl)) + '</span></div>' +
+          '<div class="synchro-box">' +
+            '<span>⚔️ 싱크로 레벨:</span>' +
+            '<input type="number" class="synchro-input" data-id="' + id + '" value="' + sLvl + '" min="1" max="1000">' +
+          '</div>' +
+          '<div class="prob-row"><span class="k">상자 획득 확률</span><span class="v gold">' + pct(getRate(lvl)) + '</span></div>' +
           '<div class="prob-row"><span class="k">모듈 1개 드랍</span><span class="v">' + pct(DIST[1]) + '</span></div>' +
           '<div class="prob-row"><span class="k">모듈 2개 드랍</span><span class="v">' + pct(DIST[2]) + '</span></div>' +
           '<div class="prob-row"><span class="k">모듈 3개 드랍</span><span class="v">' + pct(DIST[3]) + '</span></div>' +
@@ -377,6 +386,23 @@
           '<div class="expect-line"><span class="lbl">일반일 (' + baseNormal + '회) 기댓값</span><span class="num">' + fmt(ePerPlay(lvl)*baseNormal) + '개</span></div>' +
           '<div class="expect-line"><span class="lbl">풀버스트 (' + baseBurst + '회) 기댓값</span><span class="num" style="color:var(--pink)">' + fmt(ePerPlay(lvl)*baseBurst) + '개</span></div>';
         grid.appendChild(card);
+      });
+
+      // 싱크로 레벨 변경 이벤트 바인딩
+      var synchroInputs = grid.querySelectorAll('.synchro-input');
+      synchroInputs.forEach(function(inp){
+        inp.addEventListener('change', function(e){
+          var targetId = e.target.getAttribute('data-id');
+          var newLvl = parseInt(e.target.value, 10);
+          if(!isNaN(newLvl) && newLvl > 0) {
+            var found = items.find(function(x){ return x.id === targetId; });
+            if(found) {
+              found.synchroLevel = newLvl;
+              renderAll();
+              saveDataToServer(false);
+            }
+          }
+        });
       });
 
       var delBtns = grid.querySelectorAll('.btn-delete-stage');
@@ -450,7 +476,7 @@
       addBtn.addEventListener('click', function(){
         var chosenLevel = parseInt(select.value, 10);
         var newId = 'stage_' + chosenLevel + '_' + Date.now();
-        items.push({ id: newId, level: chosenLevel });
+        items.push({ id: newId, level: chosenLevel, synchroLevel: 350 });
         initItemData(newId);
         activeId = newId;
         renderAll();
@@ -465,8 +491,9 @@
     function dayActualSum(id, dayIdx){
       var dayObj = data[id] ? data[id][dayIdx] : null;
       if(!dayObj) return 0;
+      var currentItem = items.find(function(x){ return x.id === id; }) || { synchroLevel: 350 };
+      var maxPlays = getItemMaxPlays(currentItem, dayObj.isBurst);
       var sum = 0;
-      var maxPlays = getMaxPlays(dayObj.isBurst);
       for(var i=0; i<maxPlays; i++){
         if(dayObj.p[i] !== null && dayObj.p[i] !== undefined) {
           sum += Number(dayObj.p[i]);
@@ -477,7 +504,8 @@
 
     function dayExpectedSum(lvl, id, dayIdx){
       var dayObj = data[id] ? data[id][dayIdx] : null;
-      var plays = getMaxPlays(dayObj && dayObj.isBurst);
+      var currentItem = items.find(function(x){ return x.id === id; }) || { synchroLevel: 350 };
+      var plays = getItemMaxPlays(currentItem, dayObj && dayObj.isBurst);
       return ePerPlay(lvl) * plays;
     }
 
@@ -487,7 +515,9 @@
       body.innerHTML = '';
       var cum = 0;
 
-      var normalLimit = (userAccountLevel >= 600) ? 5 : ((userAccountLevel >= 400) ? 4 : 3);
+      var activeItem = items.find(function(x){ return x.id === activeId; }) || { synchroLevel: 350 };
+      var sLvl = activeItem.synchroLevel || 350;
+      var normalLimit = (sLvl >= 600) ? 5 : ((sLvl >= 400) ? 4 : 3);
 
       for(var d=0; d<DAYS; d++){
         var dayData = (data[activeId] && data[activeId][d]) ? data[activeId][d] : { isBurst: false, p: [null,null,null,null,null,null,null,null,null,null] };
@@ -498,7 +528,7 @@
 
         var tdDay = document.createElement('td');
         tdDay.className = 'day-cell';
-        tdDay.style.fontFamily = 'Orbitron, sans-serif';
+        tdDay.style.fontFamily = 'Cinzel, sans-serif';
         tdDay.textContent = 'D+' + (d+1);
         tr.appendChild(tdDay);
 
@@ -511,7 +541,7 @@
         (function(dayIdx, checkboxEl){
           checkboxEl.addEventListener('change', function(){
             data[activeId][dayIdx].isBurst = checkboxEl.checked;
-            var currentMax = getMaxPlays(checkboxEl.checked);
+            var currentMax = getItemMaxPlays(activeItem, checkboxEl.checked);
             for(var i = currentMax; i < 10; i++){
               data[activeId][dayIdx].p[i] = null;
             }
@@ -617,7 +647,7 @@
         var tr = document.createElement('tr');
         var tdDay = document.createElement('td');
         tdDay.className = 'day-cell';
-        tdDay.style.fontFamily = 'Orbitron, sans-serif';
+        tdDay.style.fontFamily = 'Cinzel, sans-serif';
         tdDay.textContent = 'D+' + (d+1);
         tr.appendChild(tdDay);
 
@@ -654,7 +684,7 @@
         card.className = 'total-card';
         card.innerHTML =
           '<div class="t-label">' + item.level + '단계 누적</div>' +
-          '<div class="t-value expected" style="color:var(--gold)">' + fmt(exp) + '</div>' +
+          '<div class="t-value expected" style="color:var(--gold-bright)">' + fmt(exp) + '</div>' +
           '<div class="t-sub">기댓값 총합</div>' +
           '<div class="t-value actual" style="color:var(--cyan);margin-top:10px;">' + act + '개</div>' +
           '<div class="t-sub">실제 획득 (차이 ' + (act-exp>=0?'+':'') + fmt(act-exp) + ')</div>';
@@ -679,7 +709,7 @@
 
       var labels = [];
       for(var d=1; d<=DAYS; d++) labels.push('D+'+d);
-      var defaultColors = ['#00f0ff', '#ffbe00', '#ff0055', '#a855f7', '#22c55e', '#f97316'];
+      var defaultColors = ['#f3ca6c', '#38bdf8', '#ff3366', '#a855f7', '#22c55e', '#f97316'];
 
       var canvas1 = document.getElementById('cumChart');
       if(canvas1){
@@ -699,10 +729,10 @@
           options: { 
             responsive: true, 
             maintainAspectRatio: false,
-            plugins: { legend: { labels: { color: '#f0f4f8' } } },
+            plugins: { legend: { labels: { color: '#f8fafc' } } },
             scales: {
-              x: { ticks: { color: '#8a99ad' }, grid: { color: 'rgba(255, 255, 255, 0.05)' } },
-              y: { ticks: { color: '#8a99ad' }, grid: { color: 'rgba(255, 255, 255, 0.05)' } }
+              x: { ticks: { color: '#a0aec0' }, grid: { color: 'rgba(243, 202, 108, 0.08)' } },
+              y: { ticks: { color: '#a0aec0' }, grid: { color: 'rgba(243, 202, 108, 0.08)' } }
             }
           }
         });
@@ -712,17 +742,17 @@
     function parseServerData(val) {
       if(!val) return;
 
-      if(val.userLevel !== undefined) {
-        userAccountLevel = Number(val.userLevel);
-        var lvlInput = document.getElementById('userLevelInput');
-        if(lvlInput) lvlInput.value = userAccountLevel;
-      }
-
       if (val.items && Array.isArray(val.items) && val.items.length > 0) {
-        items = val.items;
+        items = val.items.map(function(item){
+          return {
+            id: item.id,
+            level: item.level,
+            synchroLevel: item.synchroLevel !== undefined ? item.synchroLevel : 350
+          };
+        });
       } else if (val.stages && Array.isArray(val.stages)) {
         items = val.stages.map(function(s){
-          return { id: String(s), level: Number(s) };
+          return { id: String(s), level: Number(s), synchroLevel: 350 };
         });
       }
 
@@ -771,18 +801,6 @@
       }, function(err){
         console.error(err);
         setStatus('서버 연동 오류');
-      });
-    }
-
-    var levelInput = document.getElementById('userLevelInput');
-    if(levelInput) {
-      levelInput.addEventListener('change', function(){
-        var val = parseInt(this.value, 10);
-        if(!isNaN(val) && val > 0) {
-          userAccountLevel = val;
-          renderAll();
-          saveDataToServer(false);
-        }
       });
     }
 
